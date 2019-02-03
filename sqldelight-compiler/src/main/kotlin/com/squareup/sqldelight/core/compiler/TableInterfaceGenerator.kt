@@ -17,19 +17,23 @@ package com.squareup.sqldelight.core.compiler
 
 import com.alecstrong.sqlite.psi.core.psi.SqliteCreateTableStmt
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.DATA
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.buildCodeBlock
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler.allocateName
 import com.squareup.sqldelight.core.lang.ADAPTER_NAME
 import com.squareup.sqldelight.core.lang.IMPLEMENTATION_NAME
 import com.squareup.sqldelight.core.lang.util.columns
 import com.squareup.sqldelight.core.lang.util.sqFile
+import com.squareup.sqldelight.core.util.isArray
 
 internal class TableInterfaceGenerator(private val table: SqliteCreateTableStmt) {
   private val typeName = allocateName(table.tableName).capitalize()
@@ -68,18 +72,27 @@ internal class TableInterfaceGenerator(private val table: SqliteCreateTableStmt)
         .addModifiers(DATA)
         .addSuperinterface(ClassName(table.sqFile().packageName, typeName))
 
-    var propertyPrints = listOf<String>()
+    val propertyPrints = mutableListOf<CodeBlock>()
 
     val constructor = FunSpec.constructorBuilder()
+    val contentToString = MemberName("kotlin.collections", "contentToString")
 
     table.columns.forEach { column ->
       val columnName = allocateName(column.columnName)
-      typeSpec.addProperty(PropertySpec.builder(columnName, column.type().javaType, OVERRIDE)
+      val columnType = column.type().javaType
+      typeSpec.addProperty(PropertySpec.builder(columnName, columnType, OVERRIDE)
           .initializer(columnName)
           .build())
-      constructor.addParameter(columnName, column.type().javaType, OVERRIDE)
+      constructor.addParameter(columnName, columnType, OVERRIDE)
 
-      propertyPrints += "  $columnName: ${"$"}$columnName"
+      propertyPrints += buildCodeBlock {
+        add("  $columnName: ")
+        if (columnType.isArray) {
+          add("\${$columnName.%M()}", contentToString)
+        } else {
+          add("\$$columnName")
+        }
+      }
     }
 
     typeSpec.addFunction(FunSpec.builder("toString")

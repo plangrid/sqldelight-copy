@@ -1,6 +1,7 @@
 package com.squareup.sqldelight.core.queries
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.sqldelight.core.compiler.QueryInterfaceGenerator
 import com.squareup.sqldelight.core.compiler.SelectQueryGenerator
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
@@ -566,6 +567,92 @@ class InterfaceGeneration {
       |        |  category_: ${"$"}category_
       |        |  type_: ${"$"}type_
       |        |  name_: ${"$"}name_
+      |        |]
+      |        ""${'"'}.trimMargin()
+      |    }
+      |}
+      |""".trimMargin())
+  }
+
+  @Test fun `kotlin array types are printed correctly in toString`() {
+    val result = FixtureCompiler.parseSql("""
+      |CREATE TABLE test (
+      |  booleanArray BLOB AS BooleanArray NOT NULL,
+      |  byteArray BLOB AS ByteArray NOT NULL,
+      |  charArray BLOB AS CharArray NOT NULL,
+      |  doubleArray BLOB AS DoubleArray NOT NULL,
+      |  floatArray BLOB AS FloatArray NOT NULL,
+      |  intArray BLOB AS IntArray NOT NULL,
+      |  longArray BLOB AS LongArray NOT NULL,
+      |  shortArray BLOB AS ShortArray NOT NULL,
+      |  stringArray BLOB AS Array<String> NOT NULL
+      |);
+      |
+      |select:
+      |SELECT * FROM test;
+      |""".trimMargin(), temporaryFolder)
+
+    val query = result.namedQueries.first()
+    val generator = QueryInterfaceGenerator(query)
+    val file = FileSpec.builder("com.example", "Test")
+        .addType(generator.kotlinInterfaceSpec())
+        .build()
+    assertThat(file.toString()).isEqualTo("""
+      |package com.example
+      |
+      |import kotlin.Array
+      |import kotlin.BooleanArray
+      |import kotlin.ByteArray
+      |import kotlin.CharArray
+      |import kotlin.DoubleArray
+      |import kotlin.FloatArray
+      |import kotlin.IntArray
+      |import kotlin.LongArray
+      |import kotlin.ShortArray
+      |import kotlin.String
+      |import kotlin.collections.contentToString
+      |
+      |interface Select {
+      |    val booleanArray: BooleanArray
+      |
+      |    val byteArray: ByteArray
+      |
+      |    val charArray: CharArray
+      |
+      |    val doubleArray: DoubleArray
+      |
+      |    val floatArray: FloatArray
+      |
+      |    val intArray: IntArray
+      |
+      |    val longArray: LongArray
+      |
+      |    val shortArray: ShortArray
+      |
+      |    val stringArray: Array<String>
+      |
+      |    data class Impl(
+      |        override val booleanArray: BooleanArray,
+      |        override val byteArray: ByteArray,
+      |        override val charArray: CharArray,
+      |        override val doubleArray: DoubleArray,
+      |        override val floatArray: FloatArray,
+      |        override val intArray: IntArray,
+      |        override val longArray: LongArray,
+      |        override val shortArray: ShortArray,
+      |        override val stringArray: Array<String>
+      |    ) : Select {
+      |        override fun toString(): String = ""${'"'}
+      |        |Test.Impl [
+      |        |  booleanArray: ${"$"}{booleanArray.contentToString()},
+      |        |  byteArray: ${"$"}{byteArray.contentToString()},
+      |        |  charArray: ${"$"}{charArray.contentToString()},
+      |        |  doubleArray: ${"$"}{doubleArray.contentToString()},
+      |        |  floatArray: ${"$"}{floatArray.contentToString()},
+      |        |  intArray: ${"$"}{intArray.contentToString()},
+      |        |  longArray: ${"$"}{longArray.contentToString()},
+      |        |  shortArray: ${"$"}{shortArray.contentToString()},
+      |        |  stringArray: ${"$"}{stringArray.contentToString()}
       |        |]
       |        ""${'"'}.trimMargin()
       |    }
