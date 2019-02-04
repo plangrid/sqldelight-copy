@@ -1,13 +1,14 @@
 rootProject.name = 'sqldelight'
 
-include ':drivers:android-driver'
+// TODO: Fix so can pull in all these projects/make Android SDK optional
+//include ':drivers:android-driver'
 include ':drivers:ios-driver'
 include ':drivers:sqlite-driver'
 include ':drivers:driver-test'
-include ':extensions:android-paging'
-include ':extensions:rxjava2-extensions'
-include ':sample:android'
-include ':sample:common'
+//include ':extensions:android-paging'
+//include ':extensions:rxjava2-extensions'
+//include ':sample:android'
+//include ':sample:common'
 include ':sqldelight-compiler'
 include ':sqldelight-compiler:integration-tests'
 include ':sqldelight-gradle-plugin'
@@ -18,3 +19,15 @@ include ':test-util'
 
 enableFeaturePreview('GRADLE_METADATA')
 enableFeaturePreview('STABLE_PUBLISHING')
+
+// TODO: Remove once deps are in Maven
+sourceControl {
+    gitRepository("../SQLiter-copy") {
+        producesModule("co.touchlab:sqliter")
+        setRootDir("SQLiter")
+    }
+
+    gitRepository("../Stately-copy") {
+        producesModule("co.touchlab:stately")
+    }
+}
