@@ -43,6 +43,11 @@ kotlin {
     nativeMain {
       dependencies {
         implementation deps.stately
+        //implementation('co.touchlab:stately') {
+        //  version {
+        //    branch = 'alusch/mingw-support'
+        //  }
+        //}
       }
     }
   }

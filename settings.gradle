@@ -22,12 +22,12 @@ enableFeaturePreview('STABLE_PUBLISHING')
 
 // TODO: Remove once deps are in Maven
 sourceControl {
-    gitRepository("../SQLiter-copy") {
+    /*gitRepository("../SQLiter-copy") {
         producesModule("co.touchlab:sqliter")
         setRootDir("SQLiter")
-    }
+    }*/
 
-    gitRepository("../Stately-copy") {
+    /*gitRepository("../Stately") {
         producesModule("co.touchlab:stately")
-    }
+    }*/
 }

@@ -14,20 +14,20 @@ kotlin {
      }
    }
     nativeMain {
-      dependencies {
-        // api deps.sqliter
-        // implementation deps.stately
+      dependencies { 
+        api deps.sqliter
+        implementation deps.stately
         // TODO: Remove
-        api('co.touchlab:sqliter') {
+        /*api('co.touchlab:sqliter') {
             version {
-                branch = 'adam/mingw'
+                branch = 'daniel/mingw'
             }
-        }
-        implementation('co.touchlab:stately') {
+        }*/
+        /*implementation('co.touchlab:stately') {
             version {
-                branch = 'adam/mingw'
+                branch = 'alusch/mingw-support'
             }
-        }
+        }*/
       }
     }
    nativeTest {

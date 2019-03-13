@@ -6,6 +6,7 @@ plugins {
 apply from: '../../../../gradle/dependencies.gradle'
 
 repositories {
+  mavenLocal()
   maven {
     url "file://${projectDir.absolutePath}/../../../../build/localMaven"
   }
@@ -40,6 +41,12 @@ kotlin {
         implementation deps.kotlin.test.common
         implementation deps.kotlin.test.commonAnnotations
         implementation deps.stately
+        
+        //implementation('co.touchlab:stately') {
+        //  version {
+        //    branch = 'alusch/mingw-support'
+        //  }
+        }
         implementation "com.squareup.sqldelight:runtime:${com.squareup.sqldelight.VersionKt.VERSION}"
       }
     }
