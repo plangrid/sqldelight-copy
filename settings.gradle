@@ -1,14 +1,12 @@
 rootProject.name = 'sqldelight'
 
-// TODO: Fix so can pull in all these projects/make Android SDK optional
-//include ':drivers:android-driver'
+include ':drivers:android-driver'
 include ':drivers:ios-driver'
 include ':drivers:sqlite-driver'
 include ':drivers:driver-test'
 
-// TODO: We shouldn't need to comment these out. Need to figure out why things fail with this.
-//include ':extensions:android-paging'
-//include ':extensions:rxjava2-extensions'
+include ':extensions:android-paging'
+include ':extensions:rxjava2-extensions'
 //include ':sample:android'
 //include ':sample:common'
 include ':sqldelight-compiler'
