@@ -63,7 +63,7 @@ apply from: "$rootDir/gradle/gradle-mvn-mpp-push.gradle"
 publishing {
   publications.all {
     // Rewrite all artifacts from using the project name to just 'runtime'.
-    artifactId = artifactId.replace(project.name, 'ios-driver')
+    artifactId = artifactId.replace(project.name, 'native-driver')
   }
 }
 
