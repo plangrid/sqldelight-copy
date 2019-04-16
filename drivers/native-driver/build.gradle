@@ -28,20 +28,23 @@ kotlin {
   }
 
   targets {
-   targetFromPreset(presets.iosX64, 'iosX64')
-   targetFromPreset(presets.iosArm32, 'iosArm32')
-   targetFromPreset(presets.iosArm64, 'iosArm64')
-    targetFromPreset(presets.mingwX64, 'mingw')
+    targetFromPreset(presets.iosX64, 'iosX64')
+    targetFromPreset(presets.iosArm32, 'iosArm32')
+    targetFromPreset(presets.iosArm64, 'iosArm64')
+    targetFromPreset(presets.mingwX64, 'mingw') {
+      compilations.each {
+        it.extraOpts("-linker-options", "-Lc:\\msys64\\mingw64\\lib")
+      }
+    }
   }
 
- configure([targets.iosX64, targets.iosArm32, targets.iosArm64, targets.mingw]) {
-   compilations.main.source(sourceSets.nativeMain)
-   // TODO: Get tests building
-   //compilations.test.source(sourceSets.nativeTest)
-   compilations.each {
-     it.extraOpts("-linker-options", "-lsqlite3")
-   }
- }
+  configure([targets.iosX64, targets.iosArm32, targets.iosArm64, targets.mingw]) { 
+    compilations.main.source(sourceSets.nativeMain)
+    compilations.test.source(sourceSets.nativeTest)
+    compilations.each {
+      it.extraOpts("-linker-options", "-lsqlite3")
+    }
+  }
 }
 
 task iosTest {
@@ -77,6 +80,7 @@ afterEvaluate {
     dependsOn 'publishIosX64PublicationToTestRepository'
     dependsOn 'publishIosArm32PublicationToTestRepository'
     dependsOn 'publishIosArm64PublicationToTestRepository'
+    dependsOn 'publishMingwPublicationToTestRepository'
   }
   // NOTE: We do not alias uploadArchives because CI runs it on Linux and we only want to run it on Mac OS.
   //tasks.create('uploadArchives').dependsOn('publishKotlinMultiplatformPublicationToMavenRepository')
