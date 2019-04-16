@@ -14,7 +14,9 @@ repositories {
 }
 
 sqldelight {
-  packageName = "com.sample"
+  Database {
+    packageName = "com.sample"
+  }
 }
 
 kotlin {

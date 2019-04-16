@@ -56,9 +56,9 @@ public class MigrationTest {
     helper.close();
 
     // Migrate the db with a queryWrapper
-    SqlDriver database = new AndroidSqliteDriver(QueryWrapper.Schema.INSTANCE,
+    SqlDriver database = new AndroidSqliteDriver(QueryWrapper.Companion.getSchema(),
         InstrumentationRegistry.getTargetContext(), "test.db");
-    QueryWrapper queryWrapper = new QueryWrapper(database);
+    QueryWrapper queryWrapper = QueryWrapper.Companion.invoke(database);
 
     // Assert info is correct
     Person person = queryWrapper.getPersonQueries()

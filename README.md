@@ -6,10 +6,11 @@ SQLDelight generates typesafe APIs from your SQL statements. It compile-time ver
 Example
 -------
 
-To use SQLDelight, apply the [gradle plugin](https://github.com/square/sqldelight#gradle) and put your SQL statements in a `.sq` file, like
-`src/main/sqldelight/com/example/HockeyPlayer.sq`. Typically the first statement creates a table.
+To use SQLDelight, apply the [gradle plugin](https://github.com/square/sqldelight#gradle) and put your SQL statements in a `.sq` file in `src/main/sqldelight`.  Typically the first statement in the SQL file creates a table.
 
 ```sql
+-- src/main/sqldelight/com/example/sqldelight/hockey/data/Player.sq
+
 CREATE TABLE hockeyPlayer (
   player_number INTEGER NOT NULL,
   full_name TEXT NOT NULL
@@ -26,7 +27,7 @@ From this SQLDelight will generate a `Database` Kotlin class with an associated 
 #### Android
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:android-driver:1.0.3"
+  implementation "com.squareup.sqldelight:android-driver:1.1.3"
 }
 ```
 ```kotlin
@@ -36,7 +37,7 @@ val driver: SqlDriver = AndroidSqliteDriver(Database.Schema, context, "test.db")
 #### iOS (Using Kotlin/Native)
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:ios-driver:1.0.3"
+  implementation "com.squareup.sqldelight:ios-driver:1.1.3"
 }
 
 // You'll also need to have SQLite linked via -lsqlite3 during compilation.
@@ -48,7 +49,7 @@ val driver: SqlDriver = NativeSqliteDriver(Database.Schema, "test.db")
 #### JVM
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:sqlite-driver:1.0.3"
+  implementation "com.squareup.sqldelight:sqlite-driver:1.1.3"
 }
 ```
 ```kotlin
@@ -262,7 +263,7 @@ To observe a query, depend on the RxJava extensions artifact and use the extensi
 
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:rxjava2-extensions:1.0.3"
+  implementation "com.squareup.sqldelight:rxjava2-extensions:1.1.3"
 }
 ```
 
@@ -289,7 +290,7 @@ sqldelight {
 
 Continue to put `.sq` files in the `src/main/kotlin` directory, and then `expect` a `SqlDriver` to be provided by individual platforms when creating the `Database`.
 
-Multiplatform requires the gradle metadata feature, which you can enable via the `settings.gradle` file in the project root;
+Multiplatform **requires the gradle metadata feature**, which you need to enable via the `settings.gradle` file in the project root:
 
 ```groovy
 enableFeaturePreview('GRADLE_METADATA')
@@ -302,7 +303,7 @@ To use SQLDelight with [Android's Paging Library](https://developer.android.com/
 
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:android-paging-extensions:1.0.3"
+  implementation "com.squareup.sqldelight:android-paging-extensions:1.1.3"
 }
 ```
 
@@ -352,18 +353,29 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'com.squareup.sqldelight:gradle-plugin:1.0.3'
+    classpath 'com.squareup.sqldelight:gradle-plugin:1.1.3'
   }
 }
 
 apply plugin: 'com.squareup.sqldelight'
+```
 
-// Optional configuration of plugin.
+You can declare databases explicitely in gradle for tighter control of the generated schema:
+
+```groovy
 sqldelight {
-  packageName = "com.example" // Defaults to the package in AndroidManifest.xml.
-  className = "MyDatabase" // Defaults to "Database"
-  sourceSet = files("src/commonMain/sqldelight") // Defaults to files("src/main/sqldelight")
-  schemaOutputDirectory = file("src/main/sqldelight/migrations") // Defaults to file("src/main/sqldelight")
+  MyDatabase {
+    packageName = "com.example.db"
+    // By default this is ["sqldelight"], and means your sqldelight will be in
+    // folders like 'src/main/db' instead of 'src/main/sqldelight'
+    sourceFolders = ["db"]
+
+    // Defaults to file("src/main/sqldelight")
+    schemaOutputDirectory = file("build/dbs")
+
+    // Optionally specify schema dependencies on other gradle projects
+    dependency project(':OtherProject')
+  }
 }
 ```
 

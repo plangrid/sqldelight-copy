@@ -16,14 +16,20 @@
 package com.squareup.sqldelight.gradle
 
 import com.squareup.sqldelight.VERSION
+import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightEnvironment
 import com.squareup.sqldelight.core.SqlDelightEnvironment.CompilationStatus.Failure
 import com.squareup.sqldelight.core.SqlDelightException
+import org.gradle.api.file.FileTree
 import org.gradle.api.logging.LogLevel.ERROR
 import org.gradle.api.logging.LogLevel.INFO
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -35,17 +41,18 @@ open class SqlDelightTask : SourceTask() {
   @get:OutputDirectory var outputDirectory: File? = null
 
   @Internal lateinit var sourceFolders: Iterable<File>
-  @Input lateinit var packageName: String
-  @Input lateinit var className: String
+  @Internal lateinit var dependencySourceFolders: Iterable<File>
+  @Internal @Input lateinit var properties: SqlDelightDatabaseProperties
 
   @TaskAction
   fun generateSqlDelightFiles() {
     outputDirectory?.deleteRecursively()
     val environment = SqlDelightEnvironment(
         sourceFolders = sourceFolders.filter { it.exists() },
-        packageName = packageName,
-        className = className,
-        outputDirectory = outputDirectory!!
+        dependencyFolders = dependencySourceFolders.filter { it.exists() },
+        properties = properties,
+        outputDirectory = outputDirectory,
+        moduleName = project.name.filter { it.isLetter() }
     )
 
     val generationStatus = environment.generateSqlDelightFiles { info ->
@@ -59,5 +66,12 @@ open class SqlDelightTask : SourceTask() {
         throw SqlDelightException("Generation failed; see the generator error output for details.")
       }
     }
+  }
+
+  @InputFiles
+  @SkipWhenEmpty
+  @PathSensitive(PathSensitivity.RELATIVE)
+  override fun getSource(): FileTree {
+    return super.getSource()
   }
 }

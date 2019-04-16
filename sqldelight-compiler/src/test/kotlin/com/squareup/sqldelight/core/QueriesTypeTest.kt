@@ -1,7 +1,6 @@
 package com.squareup.sqldelight.core
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
 import com.squareup.sqldelight.test.util.FixtureCompiler
 import org.junit.Rule
 import org.junit.Test
@@ -26,31 +25,69 @@ class QueriesTypeTest {
       |SELECT *
       |FROM data
       |WHERE id = ?;
-    """.trimMargin(), temporaryFolder, SqlDelightCompiler::writeQueriesType, fileName = "Data.sq")
+    """.trimMargin(), temporaryFolder, fileName = "Data.sq")
 
     val select = result.compiledFile.namedQueries.first()
     val insert = result.compiledFile.namedMutators.first()
     assertThat(result.errors).isEmpty()
 
-    val dataQueries = File(result.outputDirectory, "com/example/DataQueries.kt")
+    val dataQueries = File(result.outputDirectory, "com/example/testmodule/TestDatabaseImpl.kt")
+    assertThat(result.compilerOutput).containsKey(dataQueries)
     assertThat(result.compilerOutput[dataQueries].toString()).isEqualTo("""
-      |package com.example
+      |package com.example.testmodule
       |
+      |import com.example.Data
+      |import com.example.DataQueries
+      |import com.example.TestDatabase
       |import com.squareup.sqldelight.Query
-      |import com.squareup.sqldelight.Transacter
+      |import com.squareup.sqldelight.TransacterImpl
       |import com.squareup.sqldelight.db.SqlCursor
       |import com.squareup.sqldelight.db.SqlDriver
+      |import com.squareup.sqldelight.internal.copyOnWriteList
       |import kotlin.Any
+      |import kotlin.Int
       |import kotlin.Long
       |import kotlin.collections.List
       |import kotlin.collections.MutableList
+      |import kotlin.reflect.KClass
       |
-      |class DataQueries(private val database: TestDatabase, private val driver: SqlDriver) :
-      |        Transacter(driver) {
-      |    internal val selectForId: MutableList<Query<*>> =
-      |            com.squareup.sqldelight.internal.copyOnWriteList()
+      |internal val KClass<TestDatabase>.schema: SqlDriver.Schema
+      |    get() = TestDatabaseImpl.Schema
       |
-      |    fun <T : Any> selectForId(id: Long, mapper: (id: Long, value: List?) -> T): Query<T> =
+      |internal fun KClass<TestDatabase>.newInstance(driver: SqlDriver, dataAdapter: Data.Adapter):
+      |        TestDatabase = TestDatabaseImpl(driver, dataAdapter)
+      |
+      |private class TestDatabaseImpl(driver: SqlDriver, internal val dataAdapter: Data.Adapter) :
+      |        TransacterImpl(driver), TestDatabase {
+      |    override val dataQueries: DataQueriesImpl = DataQueriesImpl(this, driver)
+      |
+      |    object Schema : SqlDriver.Schema {
+      |        override val version: Int
+      |            get() = 1
+      |
+      |        override fun create(driver: SqlDriver) {
+      |            driver.execute(null, ""${'"'}
+      |                    |CREATE TABLE data (
+      |                    |  id INTEGER PRIMARY KEY,
+      |                    |  value TEXT
+      |                    |)
+      |                    ""${'"'}.trimMargin(), 0)
+      |        }
+      |
+      |        override fun migrate(
+      |            driver: SqlDriver,
+      |            oldVersion: Int,
+      |            newVersion: Int
+      |        ) {
+      |        }
+      |    }
+      |}
+      |
+      |private class DataQueriesImpl(private val database: TestDatabaseImpl, private val driver: SqlDriver)
+      |        : TransacterImpl(driver), DataQueries {
+      |    internal val selectForId: MutableList<Query<*>> = copyOnWriteList()
+      |
+      |    override fun <T : Any> selectForId(id: Long, mapper: (id: Long, value: List?) -> T): Query<T> =
       |            SelectForId(id) { cursor ->
       |        mapper(
       |            cursor.getLong(0)!!,
@@ -58,9 +95,9 @@ class QueriesTypeTest {
       |        )
       |    }
       |
-      |    fun selectForId(id: Long): Query<Data> = selectForId(id, Data::Impl)
+      |    override fun selectForId(id: Long): Query<Data> = selectForId(id, Data::Impl)
       |
-      |    fun insertData(id: Long?, value: List?) {
+      |    override fun insertData(id: Long?, value: List?) {
       |        driver.execute(${insert.id}, ""${'"'}
       |        |INSERT INTO data
       |        |VALUES (?1, ?2)

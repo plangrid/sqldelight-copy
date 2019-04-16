@@ -17,8 +17,9 @@ repositories {
 
 
 sqldelight {
-  packageName = "com.squareup.sqldelight.integration"
-  className = "QueryWrapper"
+  QueryWrapper {
+    packageName = "com.squareup.sqldelight.integration"
+  }
 }
 
 kotlin {
@@ -65,7 +66,7 @@ task iosTest {
   description = "Runs tests for target 'ios' on an iOS simulator"
 
   doLast {
-    def binary = kotlin.targets.ios.compilations.test.getBinary('EXECUTABLE', 'DEBUG')
+    def binary = kotlin.targets.ios.binaries.getExecutable('test', 'DEBUG').outputFile
     exec {
       commandLine 'xcrun', 'simctl', 'spawn', device, binary.absolutePath
     }

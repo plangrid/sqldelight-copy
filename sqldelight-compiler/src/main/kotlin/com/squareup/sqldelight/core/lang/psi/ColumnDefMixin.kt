@@ -20,6 +20,7 @@ import com.alecstrong.sqlite.psi.core.psi.SqliteIdentifier
 import com.alecstrong.sqlite.psi.core.psi.SqliteTypes
 import com.alecstrong.sqlite.psi.core.psi.impl.SqliteColumnDefImpl
 import com.intellij.lang.ASTNode
+import com.squareup.kotlinpoet.ARRAY
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName
@@ -27,8 +28,8 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.FLOAT
 import com.squareup.kotlinpoet.INT
-import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LONG
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.SHORT
@@ -76,8 +77,7 @@ internal abstract class ColumnDefMixin(
       return PropertySpec
           .builder(
               name = "${allocateName(columnName)}Adapter",
-              type = columnAdapterType.parameterizedBy(customType, typeName.type().sqliteType.javaType),
-              modifiers = *arrayOf(KModifier.INTERNAL)
+              type = columnAdapterType.parameterizedBy(customType, typeName.type().sqliteType.javaType)
           )
           .build()
     }
@@ -162,6 +162,19 @@ internal abstract class ColumnDefMixin(
       "String" -> String::class.asClassName()
       "ByteArray" -> ByteArray::class.asClassName()
       else -> null
+    }
+
+    internal val TypeName.isArrayType get() = when (this) {
+      is ParameterizedTypeName -> rawType == ARRAY
+      BooleanArray::class.asClassName(),
+      ByteArray::class.asClassName(),
+      CharArray::class.asClassName(),
+      DoubleArray::class.asClassName(),
+      FloatArray::class.asClassName(),
+      IntArray::class.asClassName(),
+      LongArray::class.asClassName(),
+      ShortArray::class.asClassName() -> true
+      else -> false
     }
   }
 }

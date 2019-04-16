@@ -54,7 +54,13 @@ kotlin {
 
   targets {
     targetFromPreset(presets.jvm, 'jvm')
-    targetFromPreset(presets.js, 'js')
+    targetFromPreset(presets.js, 'js') {
+      tasks.getByName(compilations.main.compileKotlinTaskName).kotlinOptions {
+        moduleKind = 'umd'
+        sourceMap = true
+        metaInfo = true
+      }
+    }
     targetFromPreset(presets.iosX64, 'iosX64')
     targetFromPreset(presets.iosArm32, 'iosArm32')
     targetFromPreset(presets.iosArm64, 'iosArm64')
@@ -73,12 +79,14 @@ afterEvaluate {
     dependsOn 'publishKotlinMultiplatformPublicationToTestRepository'
     dependsOn 'publishJvmPublicationToTestRepository'
     dependsOn 'publishJsPublicationToTestRepository'
+    dependsOn 'publishMetadataPublicationToTestRepository'
   }
   tasks.create('installIosLocally') {
     dependsOn 'publishKotlinMultiplatformPublicationToTestRepository'
     dependsOn 'publishIosArm32PublicationToTestRepository'
     dependsOn 'publishIosArm64PublicationToTestRepository'
     dependsOn 'publishIosX64PublicationToTestRepository'
+    dependsOn 'publishMetadataPublicationToTestRepository'
   }
   // NOTE: We do not alias uploadArchives because CI runs it on Linux and we only want to run it on Mac OS.
   //tasks.create('uploadArchives').dependsOn('publishKotlinMultiplatformPublicationToMavenRepository')

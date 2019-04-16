@@ -1,6 +1,7 @@
 package com.squareup.sqldelight.core.tables
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
 import com.squareup.sqldelight.core.compiler.TableInterfaceGenerator
 import com.squareup.sqldelight.test.util.FixtureCompiler
@@ -158,7 +159,101 @@ class InterfaceGeneration {
       |        |  longValue: ${"$"}longValue
       |        |  floatValue: ${"$"}floatValue
       |        |  doubleValue: ${"$"}doubleValue
-      |        |  blobValue: ${"$"}blobValue
+      |        |  blobValue: ${"$"}{blobValue.kotlin.collections.contentToString()}
+      |        |]
+      |        ""${'"'}.trimMargin()
+      |    }
+      |}
+      |""".trimMargin())
+  }
+
+  @Test fun `kotlin array types are printed properly`() {
+    val result = FixtureCompiler.parseSql("""
+      |CREATE TABLE test (
+      |  arrayValue BLOB AS kotlin.Array<kotlin.Int> NOT NULL,
+      |  booleanArrayValue BLOB AS kotlin.BooleanArray NOT NULL,
+      |  byteArrayValue BLOB AS kotlin.ByteArray NOT NULL,
+      |  charArrayValue BLOB AS kotlin.CharArray NOT NULL,
+      |  doubleArrayValue BLOB AS kotlin.DoubleArray NOT NULL,
+      |  floatArrayValue BLOB AS kotlin.FloatArray NOT NULL,
+      |  intArrayValue BLOB AS kotlin.IntArray NOT NULL,
+      |  longArrayValue BLOB AS kotlin.LongArray NOT NULL,
+      |  shortArrayValue BLOB AS kotlin.ShortArray NOT NULL
+      |);
+      |""".trimMargin(), tempFolder)
+
+    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!)
+    val file = FileSpec.builder("", "Test")
+        .addType(generator.kotlinInterfaceSpec())
+        .build()
+    assertThat(file.toString()).isEqualTo("""
+      |import com.squareup.sqldelight.ColumnAdapter
+      |import kotlin.Array
+      |import kotlin.BooleanArray
+      |import kotlin.ByteArray
+      |import kotlin.CharArray
+      |import kotlin.DoubleArray
+      |import kotlin.FloatArray
+      |import kotlin.Int
+      |import kotlin.IntArray
+      |import kotlin.LongArray
+      |import kotlin.ShortArray
+      |import kotlin.String
+      |import kotlin.collections.contentToString
+      |
+      |interface Test {
+      |    val arrayValue: Array<Int>
+      |
+      |    val booleanArrayValue: BooleanArray
+      |
+      |    val byteArrayValue: ByteArray
+      |
+      |    val charArrayValue: CharArray
+      |
+      |    val doubleArrayValue: DoubleArray
+      |
+      |    val floatArrayValue: FloatArray
+      |
+      |    val intArrayValue: IntArray
+      |
+      |    val longArrayValue: LongArray
+      |
+      |    val shortArrayValue: ShortArray
+      |
+      |    class Adapter(
+      |        val arrayValueAdapter: ColumnAdapter<Array<Int>, ByteArray>,
+      |        val booleanArrayValueAdapter: ColumnAdapter<BooleanArray, ByteArray>,
+      |        val byteArrayValueAdapter: ColumnAdapter<ByteArray, ByteArray>,
+      |        val charArrayValueAdapter: ColumnAdapter<CharArray, ByteArray>,
+      |        val doubleArrayValueAdapter: ColumnAdapter<DoubleArray, ByteArray>,
+      |        val floatArrayValueAdapter: ColumnAdapter<FloatArray, ByteArray>,
+      |        val intArrayValueAdapter: ColumnAdapter<IntArray, ByteArray>,
+      |        val longArrayValueAdapter: ColumnAdapter<LongArray, ByteArray>,
+      |        val shortArrayValueAdapter: ColumnAdapter<ShortArray, ByteArray>
+      |    )
+      |
+      |    data class Impl(
+      |        override val arrayValue: Array<Int>,
+      |        override val booleanArrayValue: BooleanArray,
+      |        override val byteArrayValue: ByteArray,
+      |        override val charArrayValue: CharArray,
+      |        override val doubleArrayValue: DoubleArray,
+      |        override val floatArrayValue: FloatArray,
+      |        override val intArrayValue: IntArray,
+      |        override val longArrayValue: LongArray,
+      |        override val shortArrayValue: ShortArray
+      |    ) : com.example.Test {
+      |        override fun toString(): String = ""${'"'}
+      |        |Test.Impl [
+      |        |  arrayValue: ${'$'}{arrayValue.contentToString()}
+      |        |  booleanArrayValue: ${'$'}{booleanArrayValue.contentToString()}
+      |        |  byteArrayValue: ${'$'}{byteArrayValue.contentToString()}
+      |        |  charArrayValue: ${'$'}{charArrayValue.contentToString()}
+      |        |  doubleArrayValue: ${'$'}{doubleArrayValue.contentToString()}
+      |        |  floatArrayValue: ${'$'}{floatArrayValue.contentToString()}
+      |        |  intArrayValue: ${'$'}{intArrayValue.contentToString()}
+      |        |  longArrayValue: ${'$'}{longArrayValue.contentToString()}
+      |        |  shortArrayValue: ${'$'}{shortArrayValue.contentToString()}
       |        |]
       |        ""${'"'}.trimMargin()
       |    }
@@ -178,7 +273,7 @@ class InterfaceGeneration {
       |interface Test {
       |    val mapValue: kotlin.collections.Map<kotlin.collections.List<kotlin.collections.List<String>>, kotlin.collections.List<kotlin.collections.List<String>>>?
       |
-      |    class Adapter(internal val mapValueAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Map<kotlin.collections.List<kotlin.collections.List<String>>, kotlin.collections.List<kotlin.collections.List<String>>>, kotlin.Long>)
+      |    class Adapter(val mapValueAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Map<kotlin.collections.List<kotlin.collections.List<String>>, kotlin.collections.List<kotlin.collections.List<String>>>, kotlin.Long>)
       |
       |    data class Impl(override val mapValue: kotlin.collections.Map<kotlin.collections.List<kotlin.collections.List<String>>, kotlin.collections.List<kotlin.collections.List<String>>>?) : com.example.Test {
       |        override fun toString(): kotlin.String = ""${'"'}
@@ -213,7 +308,7 @@ class InterfaceGeneration {
       |
       |    val enabledWeeks: kotlin.collections.Set<com.gabrielittner.timetable.core.db.Week>?
       |
-      |    class Adapter(internal val enabledDaysAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Set<java.time.DayOfWeek>, kotlin.String>, internal val enabledWeeksAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Set<com.gabrielittner.timetable.core.db.Week>, kotlin.String>)
+      |    class Adapter(val enabledDaysAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Set<java.time.DayOfWeek>, kotlin.String>, val enabledWeeksAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Set<com.gabrielittner.timetable.core.db.Week>, kotlin.String>)
       |
       |    data class Impl(
       |        override val _id: kotlin.Long,
@@ -231,6 +326,46 @@ class InterfaceGeneration {
       |}
       |""".trimMargin())
   }
+
+    @Test fun `escaped names is handled correctly`() {
+        val result = FixtureCompiler.parseSql("""
+      |CREATE TABLE [group] (
+      |  `index1` TEXT,
+      |  'index2' TEXT,
+      |  "index3" TEXT,
+      |  [index4] TEXT
+      |);
+      |""".trimMargin(), tempFolder)
+
+        val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!)
+        assertThat(generator.kotlinInterfaceSpec().toString()).isEqualTo("""
+      |interface Group {
+      |    val index1: kotlin.String?
+      |
+      |    val index2: kotlin.String?
+      |
+      |    val index3: kotlin.String?
+      |
+      |    val index4: kotlin.String?
+      |
+      |    data class Impl(
+      |        override val index1: kotlin.String?,
+      |        override val index2: kotlin.String?,
+      |        override val index3: kotlin.String?,
+      |        override val index4: kotlin.String?
+      |    ) : com.example.Group {
+      |        override fun toString(): kotlin.String = ""${'"'}
+      |        |Group.Impl [
+      |        |  index1: ${"$"}index1
+      |        |  index2: ${"$"}index2
+      |        |  index3: ${"$"}index3
+      |        |  index4: ${"$"}index4
+      |        |]
+      |        ""${'"'}.trimMargin()
+      |    }
+      |}
+      |""".trimMargin())
+    }
 
   private fun checkFixtureCompiles(fixtureRoot: String) {
     val result = FixtureCompiler.compileFixture(

@@ -23,8 +23,8 @@ public class IntegrationTests {
   private SqliteKeywordsQueries keywordsQueries;
 
   @Before public void before() {
-    database = new AndroidSqliteDriver(QueryWrapper.Schema.INSTANCE, InstrumentationRegistry.getContext());
-    queryWrapper = new QueryWrapper(database);
+    database = new AndroidSqliteDriver(QueryWrapper.Companion.getSchema(), InstrumentationRegistry.getContext());
+    queryWrapper = QueryWrapper.Companion.invoke(database);
     personQueries = queryWrapper.getPersonQueries();
     keywordsQueries = queryWrapper.getSqliteKeywordsQueries();
   }
@@ -78,8 +78,8 @@ public class IntegrationTests {
     keywordsQueries.insertStmt(12, 22);
 
     long current = 10;
-    for (_group_ group : keywordsQueries.selectAll().executeAsList()) {
-      assertThat(group.get_where_()).isEqualTo(current++);
+    for (Group group : keywordsQueries.selectAll().executeAsList()) {
+      assertThat(group.getWhere()).isEqualTo(current++);
     }
     assertThat(current).isEqualTo(13);
   }
@@ -98,8 +98,8 @@ public class IntegrationTests {
     assertTrue(latch.await(10, SECONDS));
 
     long current = 10;
-    for (_group_ group : keywordsQueries.selectAll().executeAsList()) {
-      assertThat(group.get_where_()).isEqualTo(current++);
+    for (Group group : keywordsQueries.selectAll().executeAsList()) {
+      assertThat(group.getWhere()).isEqualTo(current++);
     }
     assertThat(current).isEqualTo(13);
   }

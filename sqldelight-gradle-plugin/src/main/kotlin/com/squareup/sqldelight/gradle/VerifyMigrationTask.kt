@@ -8,8 +8,13 @@ import com.squareup.sqldelight.core.lang.util.rawSqlText
 import com.squareup.sqlite.migrations.CatalogDatabase
 import com.squareup.sqlite.migrations.DatabaseFilesCollector
 import com.squareup.sqlite.migrations.ObjectDifferDatabaseComparator
+import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -21,7 +26,11 @@ open class VerifyMigrationTask : SourceTask() {
   @Internal lateinit var sourceFolders: Iterable<File>
 
   private val environment by lazy {
-    SqlDelightEnvironment(sourceFolders = sourceFolders.filter { it.exists() })
+    SqlDelightEnvironment(
+        sourceFolders = sourceFolders.filter { it.exists() },
+        dependencyFolders = emptyList(),
+        moduleName = project.name
+    )
   }
 
   @TaskAction
@@ -68,5 +77,12 @@ open class VerifyMigrationTask : SourceTask() {
       }
     }
     return CatalogDatabase.fromFile(copy.absolutePath, initStatements).also { copy.delete() }
+  }
+
+  @InputFiles
+  @SkipWhenEmpty
+  @PathSensitive(PathSensitivity.RELATIVE)
+  override fun getSource(): FileTree {
+    return super.getSource()
   }
 }

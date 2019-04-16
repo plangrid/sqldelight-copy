@@ -5,6 +5,8 @@ rootProject.name = 'sqldelight'
 include ':drivers:ios-driver'
 include ':drivers:sqlite-driver'
 include ':drivers:driver-test'
+
+// TODO: We shouldn't need to comment these out. Need to figure out why things fail with this.
 //include ':extensions:android-paging'
 //include ':extensions:rxjava2-extensions'
 //include ':sample:android'

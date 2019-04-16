@@ -1,6 +1,35 @@
 Change Log
 ==========
 
+Version 1.1.3 *(2019-04-14)*
+----------------------------
+
+* Gradle Metadata 1.0 release.
+
+Version 1.1.2 *(2019-04-14)*
+----------------------------
+
+* New: [Runtime] #1267 Logging driver decorator.
+* Fix: [Compiler] #1254 Split string literals which are longer than 2^16 characters.
+* Fix: [Gradle] #1260 generated sources are recognized as iOS source in Multiplatform Project.
+* Fix: [IDE] #1290 kotlin.KotlinNullPointerException in CopyAsSqliteAction.kt:43.
+* Fix: [Gradle] #1268 Running linkDebugFrameworkIos* tasks fail in recent versions.
+
+Version 1.1.1 *(2019-03-01)*
+----------------------------
+
+* Fix: [Gradle] Fix module dependency compilation for android projects.
+* Fix: [Gradle] #1246 Set up api dependencies in afterEvaluate.
+* Fix: [Compiler] Array types are properly printed.
+
+Version 1.1.0 *(2019-02-27)*
+----------------------------
+
+* New: [Gradle] #502 Allow specifying schema module dependencies.
+* Enhancement: [Compiler] #1111 Table errors are sorted before other errors.
+* Fix: [Compiler] #1225 Return the correct type for REAL literals.
+* Fix: [Compiler] #1218 docid propagates through triggers.
+
 Version 1.0.3 *(2019-01-30)*
 ----------------------------
 
