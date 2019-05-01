@@ -123,15 +123,12 @@ publishing {
 
   repositories {
     maven {
-      url isReleaseBuild() ? getReleaseRepositoryUrl() : getSnapshotRepositoryUrl()
+      name 'libs-release-local'
+      url System.getenv("ARTIFACTORY_PUBLISH_URL")
       credentials {
-        username getRepositoryUsername()
-        password getRepositoryPassword()
+        username System.getenv("ARTIFACTORY_USER")
+        password System.getenv("ARTIFACTORY_PASSWORD")
       }
-    }
-    maven {
-      name 'test'
-      url "file://${rootProject.buildDir}/localMaven"
     }
   }
 }
