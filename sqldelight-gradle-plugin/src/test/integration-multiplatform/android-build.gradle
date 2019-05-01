@@ -7,6 +7,7 @@ plugins {
 apply from: '../../../../gradle/dependencies.gradle'
 
 repositories {
+  mavenLocal()
   maven {
     url "file://${projectDir.absolutePath}/../../../../build/localMaven"
   }

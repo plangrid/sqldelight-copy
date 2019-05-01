@@ -1,4 +1,4 @@
-package com.squareup.sqldelight.drivers.ios
+package com.squareup.sqldelight.drivers.native
 
 import co.touchlab.sqliter.DatabaseConfiguration
 import co.touchlab.sqliter.createDatabaseManager
@@ -14,7 +14,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertSame
-import kotlin.test.assertFails
 
 //Run tests with WAL db
 class NativeSqliteDriverTestWAL : NativeSqliteDriverTest() {
@@ -51,7 +50,11 @@ abstract class NativeSqliteDriverTest : LazyDriverBaseTest() {
   /*@Test
   fun `close with open transaction fails`(){
       transacter.transaction {
-          assertFails { driver.close() }
+        try {
+          driver.close()
+        } catch (e: Exception) {
+          println("Well, the driver failed to close")
+        }
       }
 
       //Still working? There's probably a better general test for this.
@@ -61,12 +64,11 @@ abstract class NativeSqliteDriverTest : LazyDriverBaseTest() {
       }
   }*/
 
-  //Kind of a sanity check
   @Test
   fun `threads share statement main connection multithreaded`() {
-    altInit(defaultConfiguration(defaultSchema()).copy(inMemory = true))
+    altInit(defaultConfiguration(defaultSchema()).copy(inMemory = false))
     val ops = ThreadOperations { }
-    val INSERTS = 10_000
+    val INSERTS = 1_000
     for (i in 0 until INSERTS) {
       ops.exe {
         driver.execute(1, "insert into test(id, value)values(?, ?)", 2) {
@@ -339,6 +341,7 @@ abstract class NativeSqliteDriverTest : LazyDriverBaseTest() {
     assertFalse(failed.value)
   }
 
+  // TODO: Fix. For some reason this is causing the tests to hang.
   @Test
   fun `SinglePool re-borrow fails`() {
     val pool = SinglePool {}
