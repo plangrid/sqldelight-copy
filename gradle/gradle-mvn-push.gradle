@@ -17,7 +17,7 @@
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-version = VERSION_NAME
+version = VERSION_NAME + "." + System.getenv("PG_BUILD_NUMBER")
 group = GROUP
 
 def isReleaseBuild() {
