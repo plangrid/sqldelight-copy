@@ -61,14 +61,13 @@ def configurePom(pom) {
 afterEvaluate { project ->
   uploadArchives {
     repositories {
-      mavenDeployer {
-        beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-        repository(url: System.getenv("ARTIFACTORY_PUBLISH_URL")) {
-          authentication(userName: System.getenv("ARTIFACTORY_USER"), password: System.getenv("ARTIFACTORY_PASSWORD"))
+      maven {
+        name 'libs-release-local'
+        url System.getenv("ARTIFACTORY_PUBLISH_URL")
+        credentials {
+          username System.getenv("ARTIFACTORY_USER")
+          password System.getenv("ARTIFACTORY_PASSWORD")
         }
-
-        configurePom(pom)
       }
     }
   }
