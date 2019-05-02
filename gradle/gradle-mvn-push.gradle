@@ -64,11 +64,8 @@ afterEvaluate { project ->
       mavenDeployer {
         beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-        repository(url: getReleaseRepositoryUrl()) {
-          authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
-        }
-        snapshotRepository(url: getSnapshotRepositoryUrl()) {
-          authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
+        repository(url: System.getenv("ARTIFACTORY_PUBLISH_URL")) {
+          authentication(userName: System.getenv("ARTIFACTORY_USER"), password: System.getenv("ARTIFACTORY_PASSWORD"))
         }
 
         configurePom(pom)
