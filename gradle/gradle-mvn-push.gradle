@@ -27,7 +27,7 @@ def isReleaseBuild() {
 def configurePom(pom) {
   pom.groupId = GROUP
   pom.artifactId = POM_ARTIFACT_ID
-  pom.version = VERSION_NAME
+  pom.version = version
 
   pom.project {
     name POM_NAME
