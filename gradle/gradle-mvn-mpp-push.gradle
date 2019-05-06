@@ -105,7 +105,7 @@ publishing {
 
   repositories {
     maven {
-      name 'libs-release-local'
+      name 'sqldelight'
       url System.getenv("ARTIFACTORY_PUBLISH_URL")
       credentials {
         username System.getenv("ARTIFACTORY_USER")
