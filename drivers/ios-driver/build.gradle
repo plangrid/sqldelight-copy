@@ -58,12 +58,13 @@ task iosTest {
 
 apply from: "$rootDir/gradle/gradle-mvn-mpp-push.gradle"
 
-/*publishing {
+publishing {
   publications.all {
+    println("Rewriting artifactId from: " + project.name)
     // Rewrite all artifacts from using the project name to just 'runtime'.
     artifactId = artifactId.replace(project.name, 'ios-driver')
   }
-}*/
+}
 
 afterEvaluate {
   // Alias the task names we use elsewhere to the new task names.
