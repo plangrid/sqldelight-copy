@@ -5,7 +5,11 @@ if (System.getenv('ANDROID_HOME')) {
     include ':extensions:android-paging'
     include ':extensions:rxjava2-extensions'
 }
-include ':drivers:ios-driver'
+
+if (getDeploymentHost() == 'macos') {
+    include ':drivers:ios-driver'
+}
+
 include ':drivers:sqlite-driver'
 include ':drivers:driver-test'
 //include ':sample:android'
