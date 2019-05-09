@@ -64,10 +64,10 @@ task renameArtifact {
   artifactId = artifactId.replace(project.name, 'ios-driver')
 }
 
-tasks.matching { it.name == 'uploadArchives'}.all {
+/*tasks.matching { it.name == 'uploadArchives'}.all {
   println("Adding rename artifact dependency to upload archives")
   it.dependsOn renameArtifact
-}
+}*/
 
 publishing {
   publications.all {
