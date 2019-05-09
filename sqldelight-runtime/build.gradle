@@ -95,3 +95,12 @@ publishing {
     artifactId = artifactId.replace(project.name, 'runtime')
   }
 }
+
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      println("Rename during uploadArchives")
+      pom.artifactId = artifactId.replace(project.name, 'runtime')
+    }
+  }
+}
