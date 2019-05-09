@@ -1,6 +1,6 @@
 apply plugin: 'org.jetbrains.kotlin.multiplatform'
 
-archivesBaseName = 'sqldelight-runtime'
+archivesBaseName = 'runtime'
 
 // TODO work around for https://youtrack.jetbrains.com/issue/KT-27170
 configurations {
@@ -48,27 +48,21 @@ kotlin {
   }
 
   targets {
-
-    if (getDeployHost() == "linux") {
-      targetFromPreset(presets.jvm, 'jvm')
-      targetFromPreset(presets.js, 'js') {
-        tasks.getByName(compilations.main.compileKotlinTaskName).kotlinOptions {
-          moduleKind = 'umd'
-          sourceMap = true
-          metaInfo = true
-        }
+    targetFromPreset(presets.jvm, 'jvm')
+    targetFromPreset(presets.js, 'js') {
+      tasks.getByName(compilations.main.compileKotlinTaskName).kotlinOptions {
+        moduleKind = 'umd'
+        sourceMap = true
+        metaInfo = true
       }
     }
+    targetFromPreset(presets.iosX64, 'iosX64')
+    targetFromPreset(presets.iosArm32, 'iosArm32')
+    targetFromPreset(presets.iosArm64, 'iosArm64')
+  }
 
-    if (getDeployHost() == "macos") {
-      targetFromPreset(presets.iosX64, 'iosX64')
-      targetFromPreset(presets.iosArm32, 'iosArm32')
-      targetFromPreset(presets.iosArm64, 'iosArm64')
-
-      configure([targets.iosX64, targets.iosArm32, targets.iosArm64]) {
-        compilations.main.source(sourceSets.nativeMain)
-      }
-    }
+  configure([targets.iosX64, targets.iosArm32, targets.iosArm64]) {
+    compilations.main.source(sourceSets.nativeMain)
   }
 }
 
