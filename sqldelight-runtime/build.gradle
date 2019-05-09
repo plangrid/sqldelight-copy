@@ -48,17 +48,23 @@ kotlin {
   }
 
   targets {
-    targetFromPreset(presets.jvm, 'jvm')
-    targetFromPreset(presets.js, 'js') {
-      tasks.getByName(compilations.main.compileKotlinTaskName).kotlinOptions {
-        moduleKind = 'umd'
-        sourceMap = true
-        metaInfo = true
+
+    if (getDeployHost() == "linux") {
+      targetFromPreset(presets.jvm, 'jvm')
+      targetFromPreset(presets.js, 'js') {
+        tasks.getByName(compilations.main.compileKotlinTaskName).kotlinOptions {
+          moduleKind = 'umd'
+          sourceMap = true
+          metaInfo = true
+        }
       }
     }
-    targetFromPreset(presets.iosX64, 'iosX64')
-    targetFromPreset(presets.iosArm32, 'iosArm32')
-    targetFromPreset(presets.iosArm64, 'iosArm64')
+
+    if (getDeployHost() == "macos") {
+      targetFromPreset(presets.iosX64, 'iosX64')
+      targetFromPreset(presets.iosArm32, 'iosArm32')
+      targetFromPreset(presets.iosArm64, 'iosArm64')
+    }
   }
 
   configure([targets.iosX64, targets.iosArm32, targets.iosArm64]) {

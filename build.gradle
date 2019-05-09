@@ -28,6 +28,10 @@ buildscript {
   }
 }
 
+def getDeployHost() {
+  return project.findProperty("BUILD_HOST")
+}
+
 apply from: "$rootDir/gradle/updateDependencies.gradle"
 apply from: "$rootDir/gradle/dependencies.gradle"
 apply plugin: 'com.jfrog.artifactory'
