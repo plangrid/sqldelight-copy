@@ -32,14 +32,14 @@ kotlin {
       targetFromPreset(presets.iosX64, 'iosX64')
       targetFromPreset(presets.iosArm32, 'iosArm32')
       targetFromPreset(presets.iosArm64, 'iosArm64')
-    }
-  }
 
-  configure([targets.iosX64, targets.iosArm32, targets.iosArm64]) {
-    compilations.main.source(sourceSets.nativeMain)
-    compilations.test.source(sourceSets.nativeTest)
-    compilations.each {
-      it.extraOpts("-linker-options", "-lsqlite3")
+      configure([targets.iosX64, targets.iosArm32, targets.iosArm64]) {
+        compilations.main.source(sourceSets.nativeMain)
+        compilations.test.source(sourceSets.nativeTest)
+        compilations.each {
+          it.extraOpts("-linker-options", "-lsqlite3")
+        }
+      }
     }
   }
 }
