@@ -90,7 +90,7 @@ apply from: "$rootDir/gradle/gradle-mvn-mpp-push.gradle"
 
 publishing {
   publications.all {
-    if (!project.name.contains('-ios')) {
+    if (System.getenv('BUILD_HOST') != 'macos') {
       println("Rewriting artifactId from: " + project.name)
       // Rewrite all artifacts from using the project name to just 'runtime'.
       artifactId = artifactId.replace(project.name, 'runtime')
