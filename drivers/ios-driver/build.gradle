@@ -58,20 +58,11 @@ task iosTest {
 
 apply from: "$rootDir/gradle/gradle-mvn-mpp-push.gradle"
 
-task renameArtifact {
-  println("Rewriting artifactId to: ios-driver from: " + project.name)
-  // Rewrite all artifacts from using the project name to just 'runtime'.
-  artifactId = artifactId.replace(project.name, 'ios-driver')
-}
-
-/*tasks.matching { it.name == 'uploadArchives'}.all {
-  println("Adding rename artifact dependency to upload archives")
-  it.dependsOn renameArtifact
-}*/
-
 publishing {
   publications.all {
-    dependsOn renameArtifact
+    println("Rewriting artifactId from: " + project.name)
+    // Rewrite all artifacts from using the project name to just 'runtime'.
+    artifactId = artifactId.replace(project.name, 'ios-driver')
   }
 }
 
