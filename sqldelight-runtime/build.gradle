@@ -90,8 +90,12 @@ apply from: "$rootDir/gradle/gradle-mvn-mpp-push.gradle"
 
 publishing {
   publications.all {
-    println("Rewriting artifactId from: " + project.name)
-    // Rewrite all artifacts from using the project name to just 'runtime'.
-    artifactId = artifactId.replace(project.name, 'runtime')
+    if (!project.name.contains('ios-')) {
+      println("Rewriting artifactId from: " + project.name)
+      // Rewrite all artifacts from using the project name to just 'runtime'.
+      artifactId = artifactId.replace(project.name, 'runtime')
+    } else {
+      println("skip rename for ios thing")
+    }
   }
 }
