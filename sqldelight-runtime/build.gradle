@@ -88,7 +88,7 @@ afterEvaluate {
 
 apply from: "$rootDir/gradle/gradle-mvn-mpp-push.gradle"
 
-publishing {
+/*publishing {
   publications.all {
     if (System.getenv('BUILD_HOST') != 'macos') {
       println("Rewriting artifactId from: " + project.name)
@@ -98,4 +98,4 @@ publishing {
       println("skip rename for ios thing")
     }
   }
-}
+}*/
