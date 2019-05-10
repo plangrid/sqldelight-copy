@@ -41,7 +41,7 @@ kotlin {
         implementation deps.kotlin.test.common
         implementation deps.kotlin.test.commonAnnotations
         implementation deps.stately
-        implementation "com.squareup.sqldelight:runtime:${com.squareup.sqldelight.VersionKt.VERSION}"
+        implementation "com.squareup.sqldelight:sqldelight-runtime:${com.squareup.sqldelight.VersionKt.VERSION}"
       }
     }
     iosMain {
