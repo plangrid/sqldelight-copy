@@ -12,6 +12,8 @@ open class SqlDelightExtension {
   internal var configuringDatabase: SqlDelightDatabase? = null
   internal lateinit var project: Project
 
+  var linkSqlite = true
+
   // TODO: Remove these after 1.1.0
   var packageName: String? = null
     set(value) = newDsl()
@@ -48,6 +50,26 @@ open class SqlDelightExtension {
 
     databases.add(database)
     return Unit
+  }
+
+  /**
+   * Supports configuration in Kotlin script build files.
+   *
+   * sqldelight {
+   *   database("MyDatabase") {
+   *     packageName = "com.example"
+   *     sourceSet = files("src/main/sqldelight")
+   *   }
+   * }
+   */
+  fun database(name: String, config: SqlDelightDatabase.() -> Unit) {
+    val database = SqlDelightDatabase(project, name = name).apply(config)
+
+    if (databases.any { it.name == database.name }) {
+      throw IllegalStateException("There is already a database defined for ${database.name}")
+    }
+
+    databases.add(database)
   }
 
   companion object {

@@ -3,6 +3,7 @@ rootProject.name = 'sqldelight'
 if (System.getenv('ANDROID_HOME')) {
     include ':drivers:android-driver'
     include ':extensions:android-paging'
+    include ':extensions:coroutines-extensions'
     include ':extensions:rxjava2-extensions'
 }
 
