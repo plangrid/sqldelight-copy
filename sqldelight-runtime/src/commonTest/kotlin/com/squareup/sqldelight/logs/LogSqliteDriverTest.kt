@@ -58,8 +58,6 @@ class LogSqliteDriverTest {
     assertEquals("QUERY\n SELECT * FROM test", logs[0])
   }
 
-  // TODO: Fix this test that is failing for some reason.
-  /*
   @JsName("transactionLogsCorrect")
   @Test fun `transaction logs are correct`() {
     transacter.transaction {}
@@ -84,7 +82,6 @@ class LogSqliteDriverTest {
     assertEquals(" [1, Alec]", logs[6])
     assertEquals("TRANSACTION COMMIT", logs[7])
   }
-   */
 }
 
 class FakeSqlDriver : SqlDriver {

@@ -341,7 +341,6 @@ abstract class NativeSqliteDriverTest : LazyDriverBaseTest() {
     assertFalse(failed.value)
   }
 
-  // TODO: Fix. For some reason this is causing the tests to hang.
   @Test
   fun `SinglePool re-borrow fails`() {
     val pool = SinglePool {}
