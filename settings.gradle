@@ -8,7 +8,7 @@ if (System.getenv('ANDROID_HOME')) {
 }
 
 if (System.getenv('BUILD_HOST') == 'macos') {
-    include ':drivers:ios-driver'
+    include ':drivers:native-driver'
 }
 
 include ':drivers:sqlite-driver'
