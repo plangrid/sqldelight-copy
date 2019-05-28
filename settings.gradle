@@ -7,7 +7,7 @@ if (System.getenv('ANDROID_HOME')) {
     include ':extensions:rxjava2-extensions'
 }
 
-if (System.getenv('BUILD_HOST') == 'macos') {
+if (System.getenv('BUILD_HOST') == 'macos' || System.getenv('BUILD_HOST') == 'windows') {
     include ':drivers:native-driver'
 }
 
