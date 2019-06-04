@@ -32,7 +32,7 @@ kotlin {
     targetFromPreset(presets.iosArm32, 'iosArm32')
     targetFromPreset(presets.iosArm64, 'iosArm64')
     targetFromPreset(presets.mingwX64, 'mingw') {
-      compilations.each {
+      compilations.test {
         it.extraOpts("-linker-options", "-Lc:\\msys64\\mingw64\\lib")
       }
     }
