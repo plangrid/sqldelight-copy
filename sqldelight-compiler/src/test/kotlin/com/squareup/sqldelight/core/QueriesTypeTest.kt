@@ -47,6 +47,7 @@ class QueriesTypeTest {
       |import kotlin.Any
       |import kotlin.Int
       |import kotlin.Long
+      |import kotlin.String
       |import kotlin.collections.List
       |import kotlin.collections.MutableList
       |import kotlin.reflect.KClass
@@ -106,7 +107,7 @@ class QueriesTypeTest {
       |            bindString(2, if (value == null) null else
       |                    database.dataAdapter.valueAdapter.encode(value))
       |        }
-      |        notifyQueries(database.dataQueries.selectForId)
+      |        notifyQueries(${insert.id}, {database.dataQueries.selectForId})
       |    }
       |
       |    private inner class SelectForId<out T : Any>(private val id: Long, mapper: (SqlCursor) -> T) :
@@ -118,6 +119,8 @@ class QueriesTypeTest {
       |        ""${'"'}.trimMargin(), 1) {
       |            bindLong(1, id)
       |        }
+      |
+      |        override fun toString(): String = "Data.sq:selectForId"
       |    }
       |}
       |""".trimMargin())

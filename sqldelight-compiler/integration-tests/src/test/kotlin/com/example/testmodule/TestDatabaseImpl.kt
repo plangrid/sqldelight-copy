@@ -135,6 +135,8 @@ private class TeamQueriesImpl(private val database: TestDatabaseImpl, private va
         """.trimMargin(), 1) {
             bindString(1, coach)
         }
+
+        override fun toString(): String = "Team.sq:teamForCoach"
     }
 
     private inner class ForInnerType<out T : Any>(private val inner_type: Shoots.Type?,
@@ -147,6 +149,8 @@ private class TeamQueriesImpl(private val database: TestDatabaseImpl, private va
             bindString(1, if (inner_type == null) null else
                     database.teamAdapter.inner_typeAdapter.encode(inner_type))
         }
+
+        override fun toString(): String = "Team.sq:forInnerType"
     }
 }
 
@@ -165,7 +169,7 @@ private class PlayerQueriesImpl(private val database: TestDatabaseImpl, private 
         number: Long,
         team: String?,
         shoots: Shoots
-    ) -> T): Query<T> = Query(101, allPlayers, driver, """
+    ) -> T): Query<T> = Query(101, allPlayers, driver, "Player.sq", "allPlayers", """
     |SELECT *
     |FROM player
     """.trimMargin()) { cursor ->
@@ -213,7 +217,7 @@ private class PlayerQueriesImpl(private val database: TestDatabaseImpl, private 
             playersForNumbers(number, Player::Impl)
 
     override fun <T : Any> selectNull(mapper: (expr: Void?) -> T): Query<T> = Query(104, selectNull,
-            driver, "SELECT NULL") { cursor ->
+            driver, "Player.sq", "selectNull", "SELECT NULL") { cursor ->
         mapper(
             null
         )
@@ -236,8 +240,8 @@ private class PlayerQueriesImpl(private val database: TestDatabaseImpl, private 
             bindString(3, team)
             bindString(4, database.playerAdapter.shootsAdapter.encode(shoots))
         }
-        notifyQueries(database.playerQueries.allPlayers + database.playerQueries.playersForTeam +
-                database.playerQueries.playersForNumbers)
+        notifyQueries(105,  queryList = {database.playerQueries.allPlayers + database.playerQueries.playersForTeam +
+                database.playerQueries.playersForNumbers})
     }
 
     override fun updateTeamForNumbers(team: String?, number: Collection<Long>) {
@@ -252,8 +256,9 @@ private class PlayerQueriesImpl(private val database: TestDatabaseImpl, private 
                     bindLong(index + 2, number)
                     }
         }
-        notifyQueries(database.playerQueries.allPlayers + database.playerQueries.playersForTeam +
-                database.playerQueries.playersForNumbers)
+        //TODO: this is a db write operation,  why the identifier here is null???
+        notifyQueries(0 , {database.playerQueries.allPlayers + database.playerQueries.playersForTeam +
+                database.playerQueries.playersForNumbers})
     }
 
     override fun foreignKeysOn() {
@@ -273,6 +278,8 @@ private class PlayerQueriesImpl(private val database: TestDatabaseImpl, private 
         """.trimMargin(), 1) {
             bindString(1, team)
         }
+
+        override fun toString(): String = "Player.sq:playersForTeam"
     }
 
     private inner class PlayersForNumbers<out T : Any>(private val number: Collection<Long>,
@@ -289,6 +296,8 @@ private class PlayerQueriesImpl(private val database: TestDatabaseImpl, private 
                         }
             }
         }
+
+        override fun toString(): String = "Player.sq:playersForNumbers"
     }
 }
 
@@ -296,7 +305,7 @@ private class GroupQueriesImpl(private val database: TestDatabaseImpl, private v
         SqlDriver) : TransacterImpl(driver), GroupQueries {
     internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
 
-    override fun selectAll(): Query<Long> = Query(109, selectAll, driver,
+    override fun selectAll(): Query<Long> = Query(109, selectAll, driver, "Group.sq", "selectAll",
             "SELECT `index` FROM `group`") { cursor ->
         cursor.getLong(0)!!
     }
