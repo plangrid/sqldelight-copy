@@ -34,7 +34,6 @@ allprojects {
     mavenCentral()
     google()
     jcenter()
-    mavenLocal()
   }
 
   tasks.withType(Test) {
