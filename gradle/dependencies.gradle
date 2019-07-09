@@ -10,8 +10,8 @@ ext.versions = [
     schemaCrawler: '14.16.04.01-java7',
     sqldelight: '1.0.2',
     moshi: '1.8.0',
-    stately: '0.7.3' + '.' + System.getenv("PG_BUILD_NUMBER"),
-    sqliter: '0.6.3' + '.' + System.getenv("PG_BUILD_NUMBER"),
+    stately: '0.7.2' + '.' + System.getenv("PG_BUILD_NUMBER"),
+    sqliter: '0.6.2' + '.' + System.getenv("PG_BUILD_NUMBER"),
     testhelp: '0.2.3',
     paging: '2.0.0',
 ]
