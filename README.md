@@ -27,7 +27,7 @@ From this SQLDelight will generate a `Database` Kotlin class with an associated 
 #### Android
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:android-driver:1.1.4"
+  implementation "com.squareup.sqldelight:android-driver:1.2.1"
 }
 ```
 ```kotlin
@@ -37,7 +37,7 @@ val driver: SqlDriver = AndroidSqliteDriver(Database.Schema, context, "test.db")
 #### iOS, or Windows (Using Kotlin/Native)
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:native-driver:1.1.4"
+  implementation "com.squareup.sqldelight:native-driver:1.2.1"
 }
 
 // You'll also need to have SQLite linked via -lsqlite3 during compilation.
@@ -49,7 +49,7 @@ val driver: SqlDriver = NativeSqliteDriver(Database.Schema, "test.db")
 #### JVM
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:sqlite-driver:1.1.4"
+  implementation "com.squareup.sqldelight:sqlite-driver:1.2.1"
 }
 ```
 ```kotlin
@@ -191,6 +191,18 @@ CREATE TABLE hockey_player (
 )
 ```
 
+Transactions
+-----
+If you want to execute multiple statements under one transaction, use `transaction` function. 
+```kotlin
+val players = listOf<Player>()
+database.playerQueries.transaction {
+  players.foreach { player ->
+    database.playerQueries.insert(player_number = player.number, full_name = player.fullName)
+  }
+}
+```
+
 Custom Column Types
 -------------------
 
@@ -270,7 +282,7 @@ To observe a query, depend on the RxJava extensions artifact and use the extensi
 
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:rxjava2-extensions:1.1.4"
+  implementation "com.squareup.sqldelight:rxjava2-extensions:1.2.1"
 }
 ```
 
@@ -310,7 +322,7 @@ To use SQLDelight with [Android's Paging Library](https://developer.android.com/
 
 ```groovy
 dependencies {
-  implementation "com.squareup.sqldelight:android-paging-extensions:1.1.4"
+  implementation "com.squareup.sqldelight:android-paging-extensions:1.2.1"
 }
 ```
 
@@ -363,7 +375,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'com.squareup.sqldelight:gradle-plugin:1.1.4'
+    classpath 'com.squareup.sqldelight:gradle-plugin:1.2.1'
   }
 }
 
@@ -426,7 +438,7 @@ Upgrading From Previous Versions
 
 There's a separate guide for upgrading from 0.7 and other pre-1.0 versions [here](https://github.com/square/sqldelight/blob/master/UPGRADING.md)
 
-# [KDoc](http://square.github.io/sqldelight/1.x/runtime/sqldelight-runtime/)
+# [KDoc](http://cashapp.github.io/sqldelight/1.x/runtime/sqldelight-runtime/)
 
 License
 =======
