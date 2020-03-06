@@ -10,33 +10,9 @@
   <depends>org.jetbrains.kotlin</depends>
 
   <description><![CDATA[
-      Generates typesafe Kotlin APIs from SQLite, and provides language
-      features inside for SQLite inside the IDE.
+      Generates typesafe Kotlin APIs from SQL, and provides language
+      features inside for SQL inside the IDE.
     ]]></description>
-
-  <change-notes><![CDATA[
-  <p>
-  1.2.1
-  <ul>
-    <li>Fix: [Gradle] Kotlin Native 1.3.60 support.</li>
-    <li>Fix: [Gradle] Warning when syncing.</li>
-    <li>Fix: [Compiler] SynetheticAccessor creation for query.</li>
-    <li>Fix: [JVM Driver] Fixed memory leak.</li>
-  </ul>
-  </p>
-  <p>
-  1.2.0
-  <ul>
-    <li>New: [Runtime] Stable Flow api.</li>
-    <li>Fix: [Gradle] Kotlin Native 1.3.50 support.</li>
-    <li>Fix: [Gradle] Clean build sometimes fails.</li>
-    <li>Fix: [Gradle] Running verify tasks prints "Could not retrieve functions"</li>
-    <li>Fix: [Compile] Can't build project if query contains FTS table joined.</li>
-    <li>Fix: [Gradle] Sporadic gradle build failure while having multiple database modules</li>
-  </ul>
-  </p>
-  ]]></change-notes>
-
 
   <!-- Plugin's project components -->
   <project-components>
@@ -50,7 +26,7 @@
     <errorHandler implementation="com.squareup.sqldelight.intellij.SqlDelightErrorHandler" />
 
     <annotator language="SqlDelight"
-        implementationClass="com.alecstrong.sqlite.psi.core.SqliteAnnotator" />
+        implementationClass="com.alecstrong.sql.psi.core.SqlAnnotator" />
     <annotator language="SqlDelight"
         implementationClass="com.squareup.sqldelight.intellij.SqlDelightClassNameElementAnnotator" />
     <completion.contributor language="SqlDelight"

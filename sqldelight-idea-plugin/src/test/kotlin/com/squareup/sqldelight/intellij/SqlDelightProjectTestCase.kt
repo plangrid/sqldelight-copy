@@ -1,5 +1,6 @@
 package com.squareup.sqldelight.intellij
 
+import com.alecstrong.sql.psi.core.DialectPreset
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.vfs.VirtualFile
@@ -12,6 +13,7 @@ import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightFileIndex
 import com.squareup.sqldelight.core.SqlDelightPropertiesFile
 import com.squareup.sqldelight.core.SqlDelightSourceFolder
+import com.squareup.sqldelight.core.SqldelightParserUtil
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
 import com.squareup.sqldelight.core.lang.SqlDelightFile
 import com.squareup.sqldelight.core.lang.SqlDelightFileType
@@ -25,6 +27,8 @@ abstract class SqlDelightProjectTestCase : LightCodeInsightFixtureTestCase() {
     get() = module.rootManager.contentRoots.single()
   override fun setUp() {
     super.setUp()
+    DialectPreset.SQLITE_3_18.setup()
+    SqldelightParserUtil.overrideSqlParser()
     myFixture.copyDirectoryToProject("", "")
     SqlDelightFileIndex.setInstance(module, FileIndex(configurePropertiesFile(), tempRoot))
     ApplicationManager.getApplication().runWriteAction {
@@ -50,7 +54,8 @@ abstract class SqlDelightProjectTestCase : LightCodeInsightFixtureTestCase() {
             SqlDelightCompilationUnit("productionRelease", listOf(SqlDelightSourceFolder("src/main/sqldelight", false), SqlDelightSourceFolder("src/production/sqldelight", false), SqlDelightSourceFolder("src/release/sqldelight", false), SqlDelightSourceFolder("src/productionRelease/sqldelight", false)))
         ),
         outputDirectory = "build",
-        dependencies = emptyList()
+        dependencies = emptyList(),
+        dialectPreset = DialectPreset.SQLITE_3_18
     )
   }
 

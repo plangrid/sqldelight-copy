@@ -15,6 +15,7 @@
  */
 package com.squareup.sqldelight.core
 
+import com.alecstrong.sql.psi.core.DialectPreset
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import java.io.File
@@ -45,10 +46,26 @@ class SqlDelightPropertiesFile(
 data class SqlDelightDatabaseProperties(
   val packageName: String,
   val compilationUnits: List<SqlDelightCompilationUnit>,
+  /** Note: this path uses platform-specific path separators, be careful where/how you use it */
   val outputDirectory: String,
   val className: String,
-  val dependencies: List<SqlDelightDatabaseName>
-)
+  val dependencies: List<SqlDelightDatabaseName>,
+  val dialectPreset: DialectPreset = DialectPreset.SQLITE_3_18
+) {
+  fun toJson(): String {
+    return adapter.toJson(this)
+  }
+
+  companion object {
+    private val adapter by lazy {
+      val moshi = Moshi.Builder().build()
+
+      return@lazy moshi.adapter(SqlDelightDatabaseProperties::class.java)
+    }
+
+    fun fromText(text: String) = adapter.fromJson(text)
+  }
+}
 
 /**
  * A compilation unit represents the group of .sq files which will be compiled all at once. A

@@ -15,10 +15,11 @@
  */
 package com.squareup.sqldelight.core
 
-import com.alecstrong.sqlite.psi.core.SqliteAnnotationHolder
-import com.alecstrong.sqlite.psi.core.SqliteCoreEnvironment
-import com.alecstrong.sqlite.psi.core.psi.SqliteCreateTableStmt
-import com.alecstrong.sqlite.psi.core.psi.SqliteSqlStmt
+import com.alecstrong.sql.psi.core.DialectPreset
+import com.alecstrong.sql.psi.core.SqlAnnotationHolder
+import com.alecstrong.sql.psi.core.SqlCoreEnvironment
+import com.alecstrong.sql.psi.core.psi.SqlCreateTableStmt
+import com.alecstrong.sql.psi.core.psi.SqlStmt
 import com.intellij.mock.MockModule
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.StandardFileSystems
@@ -44,6 +45,7 @@ import com.squareup.sqldelight.core.psi.SqlDelightImportStmt
 import java.io.File
 import java.util.ArrayList
 import java.util.StringTokenizer
+import java.lang.UnsupportedOperationException
 import kotlin.system.measureTimeMillis
 
 /**
@@ -62,13 +64,13 @@ class SqlDelightEnvironment(
     /**
      * The package name to be used for the generated SqlDelightDatabase class.
      */
-    private val properties: SqlDelightDatabaseProperties? = null,
+    private val properties: SqlDelightDatabaseProperties,
     /**
      * An output directory to place the generated class files.
      */
     private val outputDirectory: File? = null,
     private val moduleName: String
-) : SqliteCoreEnvironment(SqlDelightParserDefinition(), SqlDelightFileType, sourceFolders),
+) : SqlCoreEnvironment(SqlDelightParserDefinition(), SqlDelightFileType, sourceFolders),
     SqlDelightProjectService {
   val project: Project = projectEnvironment.project
   val module = MockModule(project, project)
@@ -85,12 +87,16 @@ class SqlDelightEnvironment(
 
   override fun module(vFile: VirtualFile) = module
 
+  override var dialectPreset: DialectPreset
+    get() = properties!!.dialectPreset
+    set(value) { throw UnsupportedOperationException() }
+
   /**
    * Run the SQLDelight compiler and return the error or success status.
    */
   fun generateSqlDelightFiles(logger: (String) -> Unit): CompilationStatus {
     val errors = ArrayList<String>()
-    annotate(object : SqliteAnnotationHolder {
+    annotate(object : SqlAnnotationHolder {
       override fun createErrorAnnotation(element: PsiElement, s: String) {
         errors.add(errorMessage(element, s))
       }
@@ -137,7 +143,7 @@ class SqlDelightEnvironment(
             when (element) {
               is PsiErrorElement -> errorElements.add(element)
               // Uncomment when sqm files understand their state of the world.
-              // is SqliteAnnotatedElement -> element.annotate(annotationHolder)
+              // is SqlAnnotatedElement -> element.annotate(annotationHolder)
             }
             return@processElements true
           }
@@ -202,8 +208,8 @@ class SqlDelightEnvironment(
   private fun context(element: PsiElement?): PsiElement? =
       when (element) {
         null -> element
-        is SqliteCreateTableStmt -> element
-        is SqliteSqlStmt -> element
+        is SqlCreateTableStmt -> element
+        is SqlStmt -> element
         is SqlDelightImportStmt -> element
         else -> context(element.parent)
       }

@@ -1,5 +1,6 @@
 package com.squareup.sqldelight
 
+import com.alecstrong.sql.psi.core.DialectPreset
 import com.google.common.truth.Truth.assertThat
 import com.squareup.sqldelight.core.SqlDelightCompilationUnit
 import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
@@ -73,7 +74,8 @@ class CompilationUnitTests {
                         sourceFolders = listOf(SqlDelightSourceFolder("src/main/sqldelight", false))
                     )
                 ),
-                dependencies = emptyList()
+                dependencies = emptyList(),
+                dialectPreset = DialectPreset.SQLITE_3_18
             ),
             SqlDelightDatabaseProperties(
                 className = "OtherDb",
@@ -88,7 +90,8 @@ class CompilationUnitTests {
                         )
                     )
                 ),
-                dependencies = emptyList()
+                dependencies = emptyList(),
+                dialectPreset = DialectPreset.SQLITE_3_18
             )
         )
       }
@@ -116,6 +119,7 @@ class CompilationUnitTests {
         |  targetFromPreset(presets.iosArm32, 'iosArm32')
         |  targetFromPreset(presets.iosArm64, 'iosArm64')
         |  targetFromPreset(presets.iosX64, 'iosX64')
+        |  targetFromPreset(presets.macosX64, 'macosX64')
         |}
       """.trimMargin())
 
@@ -161,6 +165,13 @@ class CompilationUnitTests {
                     SqlDelightSourceFolder("src/commonMain/sqldelight", false),
                     SqlDelightSourceFolder("src/iosX64Main/sqldelight", false)
                 )
+            ),
+            SqlDelightCompilationUnit(
+                    name = "macosX64Main",
+                    sourceFolders = listOf(
+                            SqlDelightSourceFolder("src/commonMain/sqldelight", false),
+                            SqlDelightSourceFolder("src/macosX64Main/sqldelight", false)
+                    )
             ),
             SqlDelightCompilationUnit(
                 name = "metadataMain",
