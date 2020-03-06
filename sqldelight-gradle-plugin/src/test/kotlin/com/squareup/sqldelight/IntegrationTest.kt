@@ -38,7 +38,39 @@ class IntegrationTest {
     assertThat(result.output).contains("BUILD SUCCESSFUL")
   }
 
-  @Test fun integrationTestsAndroid() {
+  @Test fun integrationTestsSqlite_3_24() {
+    val integrationRoot = File("src/test/integration-sqlite-3-24")
+    val gradleRoot = File(integrationRoot, "gradle").apply {
+      mkdir()
+    }
+    File("../gradle/wrapper").copyRecursively(File(gradleRoot, "wrapper"), true)
+
+    val runner = GradleRunner.create()
+        .withProjectDir(integrationRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "check", "--stacktrace")
+
+    val result = runner.build()
+    assertThat(result.output).contains("BUILD SUCCESSFUL")
+  }
+
+  @Test fun integrationTestsMySql() {
+    val integrationRoot = File("src/test/integration-mysql")
+    val gradleRoot = File(integrationRoot, "gradle").apply {
+      mkdir()
+    }
+    File("../gradle/wrapper").copyRecursively(File(gradleRoot, "wrapper"), true)
+
+    val runner = GradleRunner.create()
+        .withProjectDir(integrationRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "check", "--stacktrace")
+
+    val result = runner.build()
+    assertThat(result.output).contains("BUILD SUCCESSFUL")
+  }
+
+  @Test @Category(Instrumentation::class) fun integrationTestsAndroid() {
     val androidHome = androidHome()
     val integrationRoot = File("src/test/integration-android")
     File(integrationRoot, "local.properties").writeText("sdk.dir=$androidHome\n")
@@ -56,7 +88,9 @@ class IntegrationTest {
     assertThat(result.output).contains("BUILD SUCCESSFUL")
   }
 
-  @Test fun integrationTestsAndroidLibrary() {
+  @Test
+  @Category(Instrumentation::class)
+  fun integrationTestsAndroidLibrary() {
     val androidHome = androidHome()
     val integrationRoot = File("src/test/integration-android-library")
 
@@ -83,7 +117,9 @@ class IntegrationTest {
     }
   }
 
-  @Test fun `integration test android target of a multiplatform project`() {
+  @Test
+  @Category(Instrumentation::class)
+  fun `integration test android target of a multiplatform project`() {
     val androidHome = androidHome()
     val integrationRoot = File("src/test/integration-multiplatform")
     val buildGradle = File(integrationRoot, "build.gradle").apply { deleteOnExit() }
@@ -104,7 +140,7 @@ class IntegrationTest {
   }
 
   @Test
-  @Category(IosTest::class)
+  @Category(Instrumentation::class)
   fun `integration test ios target of a multiplatform project`() {
     val integrationRoot = File("src/test/integration-multiplatform")
     val buildGradle = File(integrationRoot, "build.gradle").apply { deleteOnExit() }
@@ -125,7 +161,7 @@ class IntegrationTest {
   }
 
   @Test
-  @Category(IosTest::class)
+  @Category(Instrumentation::class)
   fun `integration metadata task compiles successfully`() {
     val integrationRoot = File("src/test/integration-multiplatform")
     val buildGradle = File(integrationRoot, "build.gradle").apply { deleteOnExit() }

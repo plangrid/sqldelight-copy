@@ -1,6 +1,7 @@
 package com.squareup.sqldelight.gradle
 
 import com.squareup.sqldelight.VERSION
+import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightEnvironment
 import com.squareup.sqldelight.core.lang.SqlDelightFile
 import com.squareup.sqldelight.core.lang.util.forInitializationStatements
@@ -21,18 +22,20 @@ import java.io.File
 
 open class VerifyMigrationTask : SourceTask() {
   @Suppress("unused") // Required to invalidate the task on version updates.
-  @Input fun pluginVersion() = VERSION
+  @Input val pluginVersion = VERSION
 
   /** Directory where the database files are copied for the migration scripts to run against. */
   @Internal lateinit var workingDirectory: File
 
   @Internal lateinit var sourceFolders: Iterable<File>
+  @Internal @Input lateinit var properties: SqlDelightDatabaseProperties
 
   private val environment by lazy {
     SqlDelightEnvironment(
         sourceFolders = sourceFolders.filter { it.exists() },
         dependencyFolders = emptyList(),
-        moduleName = project.name
+        moduleName = project.name,
+        properties = properties
     )
   }
 
@@ -58,7 +61,8 @@ open class VerifyMigrationTask : SourceTask() {
 
   private fun checkMigration(dbFile: File, currentDb: CatalogDatabase) {
     val actualCatalog = createActualDb(dbFile)
-    val diffReport = ObjectDifferDatabaseComparator.compare(currentDb, actualCatalog).let { diff ->
+    val databaseComparator = ObjectDifferDatabaseComparator(circularReferenceExceptionLogger = logger::debug)
+    val diffReport = databaseComparator.compare(currentDb, actualCatalog).let { diff ->
       buildString(diff::printTo)
     }
 
@@ -74,7 +78,7 @@ open class VerifyMigrationTask : SourceTask() {
     val initStatements = ArrayList<String>()
     environment.forMigrationFiles {
       if (version > it.version) return@forMigrationFiles
-      it.sqlStmtList!!.statementList.forEach {
+      it.sqlStmtList!!.stmtList.forEach {
         initStatements.add(it.rawSqlText())
       }
     }

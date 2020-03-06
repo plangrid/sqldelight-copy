@@ -49,36 +49,27 @@ dependencies {
 
 test {
   // The integration tests require local installations of some of the runtimes.
-  if (System.getenv("TRAVIS_OS_NAME") == "linux") {
-    dependsOn(
-            ":sqldelight-runtime:installLocally",
-            ":drivers:android-driver:installLocally",
-            ":drivers:sqlite-driver:installLocally",
-    )
-    useJUnit {
-      excludeCategories 'com.squareup.sqldelight.IosTest'
+  dependsOn(
+          ":runtime:installArchives",
+          ":drivers:android-driver:installArchives",
+          ":drivers:sqlite-driver:installArchives",
+          ":drivers:jdbc-driver:installArchives",
+          ":drivers:native-driver:installArchives",
+  )
+  useJUnit {
+    if (project.hasProperty("Instrumentation")) {
+      includeCategories 'com.squareup.sqldelight.Instrumentation'
+    } else {
+      excludeCategories 'com.squareup.sqldelight.Instrumentation'
     }
-  } else if (System.getenv("TRAVIS_OS_NAME") == "osx") {
-    dependsOn(
-            ":sqldelight-runtime:installLocally",
-            ":drivers:native-driver:installLocally",
-    )
-    useJUnit {
-      includeCategories 'com.squareup.sqldelight.IosTest'
-    }
-  } else {
-    dependsOn(
-            ":sqldelight-runtime:installLocally",
-            ":drivers:android-driver:installLocally",
-            ":drivers:sqlite-driver:installLocally",
-            ":drivers:native-driver:installLocally",
-    )
   }
 }
 
 jar {
-  from configurations.bundled.collect {
-    it.isDirectory() ? it : zipTree(it).matching { exclude { it.path.contains('META-INF') } }
+  from {
+    configurations.bundled.collect {
+      it.isDirectory() ? it : zipTree(it).matching { exclude { it.path.contains('META-INF') } }
+    }
   }
 }
 

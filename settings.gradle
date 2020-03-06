@@ -1,21 +1,21 @@
 rootProject.name = 'sqldelight'
 
 include ':drivers:android-driver'
+include ':drivers:jdbc-driver'
 include ':drivers:native-driver'
 include ':drivers:sqlite-driver'
+include ':drivers:sqljs-driver'
 include ':drivers:driver-test'
 include ':extensions:android-paging'
 include ':extensions:coroutines-extensions'
 include ':extensions:rxjava2-extensions'
-//include ':sample:android'
-//include ':sample:common'
+include ':runtime'
+include ':sample:android'
+include ':sample:web'
+include ':sample:common'
 include ':sqldelight-compiler'
 include ':sqldelight-compiler:integration-tests'
 include ':sqldelight-gradle-plugin'
 include ':sqldelight-idea-plugin'
-include ':sqldelight-runtime'
 include ':sqlite-migrations'
 include ':test-util'
-
-enableFeaturePreview('GRADLE_METADATA')
-enableFeaturePreview('STABLE_PUBLISHING')

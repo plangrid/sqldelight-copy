@@ -15,24 +15,25 @@
  */
 package com.squareup.sqldelight.core.lang.util
 
-import com.alecstrong.sqlite.psi.core.psi.AliasElement
-import com.alecstrong.sqlite.psi.core.psi.SqliteColumnName
-import com.alecstrong.sqlite.psi.core.psi.SqliteCreateViewStmt
-import com.alecstrong.sqlite.psi.core.psi.SqliteCreateTableStmt
-import com.alecstrong.sqlite.psi.core.psi.SqliteCreateVirtualTableStmt
-import com.alecstrong.sqlite.psi.core.psi.SqliteExpr
-import com.alecstrong.sqlite.psi.core.psi.SqliteTableName
-import com.alecstrong.sqlite.psi.core.psi.SqliteTypes
+import com.alecstrong.sql.psi.core.psi.AliasElement
+import com.alecstrong.sql.psi.core.psi.SqlColumnName
+import com.alecstrong.sql.psi.core.psi.SqlCreateTableStmt
+import com.alecstrong.sql.psi.core.psi.SqlCreateViewStmt
+import com.alecstrong.sql.psi.core.psi.SqlCreateVirtualTableStmt
+import com.alecstrong.sql.psi.core.psi.SqlExpr
+import com.alecstrong.sql.psi.core.psi.SqlTableName
+import com.alecstrong.sql.psi.core.psi.SqlTypes
 import com.intellij.psi.PsiElement
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.util.PsiTreeUtil
 import com.squareup.sqldelight.core.lang.IntermediateType
-import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.TEXT
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.INTEGER
+import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.TEXT
 import com.squareup.sqldelight.core.lang.SqlDelightFile
+import com.squareup.sqldelight.core.lang.acceptsTableInterface
 import com.squareup.sqldelight.core.lang.psi.ColumnDefMixin
-import com.squareup.sqldelight.core.lang.psi.InsertStmtMixin
+import com.squareup.sqldelight.core.lang.psi.InsertStmtValuesMixin
 
 internal inline fun <reified R: PsiElement> PsiElement.parentOfType(): R {
   return PsiTreeUtil.getParentOfType(this, R::class.java)!!
@@ -40,22 +41,22 @@ internal inline fun <reified R: PsiElement> PsiElement.parentOfType(): R {
 
 internal fun PsiElement.type(): IntermediateType = when (this) {
   is AliasElement -> source().type().copy(name = name)
-  is SqliteColumnName -> {
+  is SqlColumnName -> {
     val parentRule = parent!!
     when (parentRule) {
       is ColumnDefMixin -> parentRule.type()
-      is SqliteCreateVirtualTableStmt -> IntermediateType(TEXT, name = this.name)
+      is SqlCreateVirtualTableStmt -> IntermediateType(TEXT, name = this.name)
       else -> {
         when (val resolvedReference = reference!!.resolve()!!) {
           // Synthesized columns refer directly to the table
-          is SqliteCreateTableStmt,
-          is SqliteCreateVirtualTableStmt -> synthesizedColumnType(this.name)
+          is SqlCreateTableStmt,
+          is SqlCreateVirtualTableStmt -> synthesizedColumnType(this.name)
           else -> resolvedReference.type()
         }
       }
     }
   }
-  is SqliteExpr -> type()
+  is SqlExpr -> type()
   else -> throw IllegalStateException("Cannot get function type for psi type ${this.javaClass}")
 }
 
@@ -93,10 +94,10 @@ private fun PsiElement.rangesToReplace(): List<Pair<IntRange, String>> {
             (javaTypeName!!.node.startOffset + javaTypeName!!.node.textLength),
         second = ""
     ))
-  } else if (this is InsertStmtMixin && acceptsTableInterface()) {
+  } else if (this is InsertStmtValuesMixin && parent.acceptsTableInterface()) {
     listOf(Pair(
-        first = childOfType(SqliteTypes.BIND_EXPR)!!.range,
-        second = columns.joinToString(separator = ", ", prefix = "(", postfix = ")") { "?" }
+        first = childOfType(SqlTypes.BIND_EXPR)!!.range,
+        second = parent.columns.joinToString(separator = ", ", prefix = "(", postfix = ")") { "?" }
     ))
   } else {
     children.flatMap { it.rangesToReplace() }
@@ -127,7 +128,7 @@ internal val PsiElement.range: IntRange
 fun Collection<SqlDelightFile>.forInitializationStatements(
   body: (sqlText: String) -> Unit
 ) {
-  val views = ArrayList<SqliteCreateViewStmt>()
+  val views = ArrayList<SqlCreateViewStmt>()
   val creators = ArrayList<PsiElement>()
 
   forEach { file ->
@@ -146,7 +147,7 @@ fun Collection<SqlDelightFile>.forInitializationStatements(
   val viewsLeft = views.map { it.viewName.name }.toMutableSet()
   while (views.isNotEmpty()) {
     views.removeAll { view ->
-      if (view.compoundSelectStmt!!.findChildrenOfType<SqliteTableName>()
+      if (view.compoundSelectStmt!!.findChildrenOfType<SqlTableName>()
               .any { it.name in viewsLeft }) {
         return@removeAll false
       }
