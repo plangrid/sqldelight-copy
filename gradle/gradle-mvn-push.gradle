@@ -11,6 +11,11 @@ mavenPublish {
       releaseRepositoryUrl = file("${rootProject.buildDir}/localMaven").toURI().toString()
       snapshotRepositoryUrl = file("${rootProject.buildDir}/localMaven").toURI().toString()
     }
+    uploadArchives {
+      releaseRepositoryUrl = System.getenv("ARTIFACTORY_PUBLISH_URL")
+      repositoryUsername = System.getenv("ARTIFACTORY_USER")
+      repositoryPassword = System.getenv("ARTIFACTORY_USER")
+    }
   }
 }
 

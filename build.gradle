@@ -25,32 +25,17 @@ buildscript {
 
     // Used for the sample
     classpath "com.squareup.sqldelight:gradle-plugin:${versions.sqldelight}"
-
-    classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.9.3"
   }
-}
-
-def getDeployHost() {
-  return project.findProperty("BUILD_HOST")
 }
 
 apply from: "$rootDir/gradle/updateDependencies.gradle"
 apply from: "$rootDir/gradle/dependencies.gradle"
-apply plugin: 'com.jfrog.artifactory'
 
 allprojects {
   repositories {
     mavenCentral()
     google()
     jcenter()
-
-    maven {
-      url System.getenv("ARTIFACTORY_PUBLISH_URL")
-      credentials {
-        username System.getenv("ARTIFACTORY_USER")
-        password System.getenv("ARTIFACTORY_PASSWORD")
-      }
-    }
   }
 
   tasks.withType(Test) {
