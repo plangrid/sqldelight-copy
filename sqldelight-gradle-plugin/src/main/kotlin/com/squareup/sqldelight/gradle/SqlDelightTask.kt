@@ -20,6 +20,7 @@ import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightEnvironment
 import com.squareup.sqldelight.core.SqlDelightEnvironment.CompilationStatus.Failure
 import com.squareup.sqldelight.core.SqlDelightException
+import com.squareup.sqldelight.core.SqldelightParserUtil
 import org.gradle.api.file.FileTree
 import org.gradle.api.logging.LogLevel.ERROR
 import org.gradle.api.logging.LogLevel.INFO
@@ -38,10 +39,9 @@ import java.io.File
 @CacheableTask
 open class SqlDelightTask : SourceTask() {
   @Suppress("unused") // Required to invalidate the task on version updates.
-  @Input fun pluginVersion() = VERSION
+  @Input val pluginVersion = VERSION
 
   @get:OutputDirectory
-  @get:PathSensitive(PathSensitivity.RELATIVE)
   var outputDirectory: File? = null
 
   @Internal lateinit var sourceFolders: Iterable<File>

@@ -1,0 +1,68 @@
+name: Test
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macOS-latest, windows-latest, ubuntu-latest]
+        job: [instrumentation, test]
+        exclude:
+          - os: windows-latest
+            job: instrumentation
+          - os: ubuntu-latest
+            job: instrumentation
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+      - name: Validate Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+      - name: Cache gradle
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Cache intellij download
+        uses: actions/cache@v1
+        with:
+          path: lib/download
+          key: intellij-${{ hashFiles('gradle/dependencies.gradle') }}
+
+      - name: Run ubuntu tests
+        if: matrix.os == 'ubuntu-latest'
+        run: ./gradlew build --stacktrace
+      - name: Run windows tests
+        if: matrix.os == 'windows-latest'
+        run: ./gradlew mingwTest --stacktrace
+      - name: Run instrumentation tests
+        if: matrix.job == 'instrumentation'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          script: ./gradlew connectedCheck :sqldelight-gradle-plugin:build --stacktrace -PInstrumentation
+      - name: Run ios tests
+        if: matrix.os == 'macOS-latest' && matrix.job == 'test'
+        run: ./gradlew iosTest --stacktrace
+
+      - name: Bundle the build report
+        if: failure()
+        run: find . -type d -name 'reports' | zip -@ -r build-reports.zip
+      - name: Upload the build report
+        if: failure()
+        uses: actions/upload-artifact@master
+        with:
+          name: error-report
+          path: build-reports.zip
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.configureondemand=true -Dorg.gradle.parallel=true -Dkotlin.incremental=false -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxPermSize=2048m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"

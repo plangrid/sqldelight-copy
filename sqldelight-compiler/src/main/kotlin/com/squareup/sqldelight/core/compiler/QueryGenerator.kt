@@ -1,7 +1,8 @@
 package com.squareup.sqldelight.core.compiler
 
-import com.alecstrong.sqlite.psi.core.psi.SqliteBinaryEqualityExpr
-import com.alecstrong.sqlite.psi.core.psi.SqliteTypes
+import com.alecstrong.sql.psi.core.psi.SqlBinaryEqualityExpr
+import com.alecstrong.sql.psi.core.psi.SqlTypes
+import com.alecstrong.sql.psi.core.sqlite_3_18.psi.BindParameter
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiWhiteSpace
 import com.squareup.kotlinpoet.CodeBlock
@@ -50,6 +51,10 @@ abstract class QueryGenerator(private val query: BindableQuery) {
     // For each parameter in the sql
     query.arguments.forEach { (index, argument, args) ->
       if (argument.bindArg?.isArrayParameter() == true) {
+        // For now, disable array parameters for non-sqlite
+        if (argument.bindArg.bindParameter !is BindParameter) {
+          throw IllegalStateException("Array parameters are not supported outside of SQLite.")
+        }
         needsFreshStatement = true
 
         // Need to replace the single argument with a group of indexed arguments, calculated at
@@ -82,15 +87,15 @@ abstract class QueryGenerator(private val query: BindableQuery) {
       } else {
         if (argument.javaType.isNullable) {
           val parent = argument.bindArg?.parent
-          if (parent is SqliteBinaryEqualityExpr) {
+          if (parent is SqlBinaryEqualityExpr) {
             needsFreshStatement = true
 
-            var symbol = parent.childOfType(SqliteTypes.EQ) ?: parent.childOfType(SqliteTypes.EQ2)
+            var symbol = parent.childOfType(SqlTypes.EQ) ?: parent.childOfType(SqlTypes.EQ2)
             val nullableEquality: String
             if (symbol != null) {
               nullableEquality = "${symbol.leftWhitspace()}IS${symbol.rightWhitespace()}"
             } else {
-              symbol = parent.childOfType(SqliteTypes.NEQ) ?: parent.childOfType(SqliteTypes.NEQ2)!!
+              symbol = parent.childOfType(SqlTypes.NEQ) ?: parent.childOfType(SqlTypes.NEQ2)!!
               nullableEquality = "${symbol.leftWhitspace()}IS NOT${symbol.rightWhitespace()}"
             }
 
@@ -106,7 +111,10 @@ abstract class QueryGenerator(private val query: BindableQuery) {
         // less bug-prone):
         // :name becomes ?1
         args.forEach {
-          replacements.add(it.range to "?$index")
+          if (it.bindParameter is BindParameter) {
+            // We only do this for sqlite.
+            replacements.add(it.range to "?$index")
+          }
         }
       }
     }

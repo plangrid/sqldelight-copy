@@ -23,6 +23,7 @@ import com.squareup.sqldelight.core.SqlDelightFileIndex
 import com.squareup.sqldelight.core.lang.SqlDelightFile
 import com.squareup.sqldelight.intellij.util.isAncestorOf
 import org.jetbrains.kotlin.idea.core.util.toPsiDirectory
+import java.io.File
 
 class FileIndex(
   private val properties: SqlDelightDatabaseProperties,
@@ -30,7 +31,7 @@ class FileIndex(
 ) : SqlDelightFileIndex {
   override val isConfigured = true
   override val packageName = properties.packageName
-  override val outputDirectory = properties.outputDirectory
+  override val outputDirectory = properties.outputDirectory.replace(File.separatorChar, '/')
   override val className = properties.className
   override val dependencies = properties.dependencies
 
@@ -40,7 +41,7 @@ class FileIndex(
     } else {
       file
     }
-    val folder = sourceFolders(original)
+    val folder = sourceFolders(original, includeDependencies = false)
         .firstOrNull { PsiTreeUtil.findCommonParent(original, it) != null } ?: return ""
     val folderPath = folder.virtualFile.path
     val filePath = original.virtualFile!!.path

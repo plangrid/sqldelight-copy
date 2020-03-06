@@ -1,10 +1,9 @@
-
-// TODO tie this into the normal gradle-mvn-push script
-apply plugin: 'maven-publish'
-apply plugin: 'signing'
-apply plugin: 'org.jetbrains.dokka'
+apply plugin: "org.jetbrains.dokka"
 
 dokka {
+  outputDirectory = "$rootDir/docs/1.x"
+  outputFormat = 'gfm'
+
   impliedPlatforms = ["Common"] // This will force platform tags for all non-common sources e.g. "JVM"
   kotlinTasks {
     // dokka fails to retrieve sources from MPP-tasks so they must be set empty to avoid exception
@@ -42,75 +41,3 @@ dokka {
     }
   }
 }
-
-def isReleaseBuild() {
-  return VERSION_NAME.contains("SNAPSHOT") == false
-}
-
-task emptySourcesJar(type: Jar) {
-  classifier = 'sources'
-}
-
-task javadocsJar(type: Jar, dependsOn: dokka) {
-  classifier = 'javadoc'
-  from dokka.outputDirectory
-}
-
-signing {
-  required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
-  sign(publishing.publications)
-}
-
-publishing {
-  publications.all {
-    artifact javadocsJar
-
-    pom.withXml {
-      def root = asNode()
-
-      root.children().last() + {
-        resolveStrategy = Closure.DELEGATE_FIRST
-
-        description POM_DESCRIPTION
-        name POM_NAME
-        url POM_URL
-        licenses {
-          license {
-            name POM_LICENCE_NAME
-            url POM_LICENCE_URL
-            distribution POM_LICENCE_DIST
-          }
-        }
-        scm {
-          url POM_SCM_URL
-          connection POM_SCM_CONNECTION
-          developerConnection POM_SCM_DEV_CONNECTION
-        }
-        developers {
-          developer {
-            id POM_DEVELOPER_ID
-            name POM_DEVELOPER_NAME
-          }
-        }
-      }
-    }
-  }
-
-  afterEvaluate {
-    publications.getByName('kotlinMultiplatform') {
-      // Source jars are only created for platforms, not the common artifact.
-      artifact emptySourcesJar
-    }
-  }
-
-  repositories {
-    maven {
-      url System.getenv("ARTIFACTORY_PUBLISH_URL")
-      credentials {
-        username System.getenv("ARTIFACTORY_USER")
-        password System.getenv("ARTIFACTORY_PASSWORD")
-      }
-    }
-  }
-}
-

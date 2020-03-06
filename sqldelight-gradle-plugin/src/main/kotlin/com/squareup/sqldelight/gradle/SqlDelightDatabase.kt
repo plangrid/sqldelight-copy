@@ -1,5 +1,6 @@
 package com.squareup.sqldelight.gradle
 
+import com.alecstrong.sql.psi.core.DialectPreset
 import com.android.builder.model.AndroidProject.FD_GENERATED
 import com.squareup.sqldelight.core.SqlDelightCompilationUnit
 import com.squareup.sqldelight.core.SqlDelightDatabaseName
@@ -10,6 +11,7 @@ import com.squareup.sqldelight.core.lang.SqlDelightFileType
 import com.squareup.sqldelight.gradle.kotlin.Source
 import com.squareup.sqldelight.gradle.kotlin.sources
 import groovy.lang.GroovyObject
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import java.io.File
@@ -19,7 +21,8 @@ class SqlDelightDatabase(
   var name: String,
   var packageName: String? = null,
   var schemaOutputDirectory: File? = null,
-  var sourceFolders: Collection<String>? = null
+  var sourceFolders: Collection<String>? = null,
+  var dialect: String = "sqlite:3.18"
 ) {
   private val generatedSourcesDirectory
     get() = File(project.buildDir, "$FD_GENERATED/sqldelight/code/$name")
@@ -54,6 +57,13 @@ class SqlDelightDatabase(
     }
     recursionGuard = true
 
+    val dialect = when (dialect) {
+      "sqlite:3.18" -> DialectPreset.SQLITE_3_18
+      "sqlite:3.24" -> DialectPreset.SQLITE_3_24
+      "mysql" -> DialectPreset.MYSQL
+      else -> throw GradleException("Unknown dialect $dialect")
+    }
+
     try {
       return SqlDelightDatabaseProperties(
           packageName = packageName,
@@ -65,7 +75,8 @@ class SqlDelightDatabase(
           },
           outputDirectory = generatedSourcesDirectory.toRelativeString(project.projectDir),
           className = name,
-          dependencies = dependencies.map { SqlDelightDatabaseName(it.packageName!!, it.name) }
+          dependencies = dependencies.map { SqlDelightDatabaseName(it.packageName!!, it.name) },
+          dialectPreset = dialect
       )
     } finally {
       recursionGuard = false
@@ -142,6 +153,7 @@ class SqlDelightDatabase(
           it.workingDirectory = File(project.buildDir, "sqldelight/migration_verification/${source.name.capitalize()}$name")
           it.group = "sqldelight"
           it.description = "Verify ${source.name} $name migrations and CREATE statements match."
+          it.properties = getProperties()
         }
 
     if (schemaOutputDirectory != null) {
@@ -153,6 +165,7 @@ class SqlDelightDatabase(
         it.include("**${File.separatorChar}*.${MigrationFileType.defaultExtension}")
         it.group = "sqldelight"
         it.description = "Generate a .db file containing the current $name schema for ${source.name}."
+        it.properties = getProperties()
       }
     }
     project.tasks.named("check").configure {

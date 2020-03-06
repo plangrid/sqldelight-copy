@@ -1,27 +1,21 @@
 rootProject.name = 'sqldelight'
 
-if (System.getenv('ANDROID_HOME')) {
-    include ':drivers:android-driver'
-    include ':extensions:android-paging'
-    include ':extensions:coroutines-extensions'
-    include ':extensions:rxjava2-extensions'
-}
-
-if (System.getenv('BUILD_HOST') == 'macos' || System.getenv('BUILD_HOST') == 'windows') {
-    include ':drivers:native-driver'
-}
-
+include ':drivers:android-driver'
+include ':drivers:jdbc-driver'
+include ':drivers:native-driver'
 include ':drivers:sqlite-driver'
+include ':drivers:sqljs-driver'
 include ':drivers:driver-test'
-//include ':sample:android'
-//include ':sample:common'
+include ':extensions:android-paging'
+include ':extensions:coroutines-extensions'
+include ':extensions:rxjava2-extensions'
+include ':runtime'
+include ':sample:android'
+include ':sample:web'
+include ':sample:common'
 include ':sqldelight-compiler'
 include ':sqldelight-compiler:integration-tests'
 include ':sqldelight-gradle-plugin'
 include ':sqldelight-idea-plugin'
-include ':sqldelight-runtime'
 include ':sqlite-migrations'
 include ':test-util'
-
-enableFeaturePreview('GRADLE_METADATA')
-enableFeaturePreview('STABLE_PUBLISHING')
