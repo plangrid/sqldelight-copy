@@ -64,7 +64,8 @@ allprojects {
   }
 
   group = GROUP
-  version = VERSION_NAME + "-" + System.getenv("PG_BUILD_NUMBER")
+  version = "${VERSION_NAME}.${System.getenv('PG_BUILD_NUMBER')}"
+  setProperty("VERSION_NAME", version)
 }
 
 def addDependency(Upload task, String groupId, String artifactId, String version, String type) {
