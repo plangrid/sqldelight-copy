@@ -16,25 +16,27 @@
 
 package com.squareup.sqldelight.test.util
 
+import com.alecstrong.sql.psi.core.DialectPreset
 import com.alecstrong.sql.psi.core.SqlAnnotationHolder
 import com.intellij.openapi.module.Module
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
-import com.squareup.sqldelight.core.lang.SqlDelightFile
-import org.junit.rules.TemporaryFolder
+import com.squareup.sqldelight.core.lang.MigrationFile
+import com.squareup.sqldelight.core.lang.SqlDelightQueriesFile
 import java.io.File
+import org.junit.rules.TemporaryFolder
 
-private typealias CompilationMethod = (Module, SqlDelightFile, String, (String) -> Appendable) -> Unit
+private typealias CompilationMethod = (Module, SqlDelightQueriesFile, String, (String) -> Appendable) -> Unit
 
 object FixtureCompiler {
 
   fun compileSql(
-      sql: String,
-      temporaryFolder: TemporaryFolder,
-      compilationMethod: CompilationMethod = SqlDelightCompiler::writeInterfaces,
-      fileName: String = "Test.sq"
+    sql: String,
+    temporaryFolder: TemporaryFolder,
+    compilationMethod: CompilationMethod = SqlDelightCompiler::writeInterfaces,
+    fileName: String = "Test.sq"
   ): CompilationResult {
     writeSql(sql, temporaryFolder, fileName)
     return compileFixture(
@@ -58,11 +60,12 @@ object FixtureCompiler {
   fun parseSql(
     sql: String,
     temporaryFolder: TemporaryFolder,
-    fileName: String = "Test.sq"
-  ): SqlDelightFile {
+    fileName: String = "Test.sq",
+    dialectPreset: DialectPreset = DialectPreset.SQLITE_3_18
+  ): SqlDelightQueriesFile {
     writeSql(sql, temporaryFolder, fileName)
     val errors = mutableListOf<String>()
-    val parser = TestEnvironment()
+    val parser = TestEnvironment(dialectPreset = dialectPreset)
     val environment = parser.build(temporaryFolder.fixtureRoot().path,
         createAnnotationHolder(errors)
     )
@@ -71,51 +74,72 @@ object FixtureCompiler {
       throw AssertionError("Got unexpected errors\n\n$errors")
     }
 
-    var file: SqlDelightFile? = null
+    var file: SqlDelightQueriesFile? = null
     environment.forSourceFiles {
-      if (it.name == fileName) file = it as SqlDelightFile
+      if (it.name == fileName) file = it as SqlDelightQueriesFile
     }
     return file!!
   }
 
   fun compileFixture(
-      fixtureRoot: String,
-      compilationMethod: CompilationMethod = SqlDelightCompiler::writeInterfaces,
-      generateDb: Boolean = true,
-      writer: ((String) -> Appendable)? = null,
-      outputDirectory: File = File(fixtureRoot, "output")
+    fixtureRoot: String,
+    compilationMethod: CompilationMethod = SqlDelightCompiler::writeInterfaces,
+    generateDb: Boolean = true,
+    writer: ((String) -> Appendable)? = null,
+    outputDirectory: File = File(fixtureRoot, "output"),
+    deriveSchemaFromMigrations: Boolean = false
   ): CompilationResult {
     val compilerOutput = mutableMapOf<File, StringBuilder>()
     val errors = mutableListOf<String>()
     val sourceFiles = StringBuilder()
-    val parser = TestEnvironment(outputDirectory)
+    val parser = TestEnvironment(outputDirectory, deriveSchemaFromMigrations)
     val fixtureRootDir = File(fixtureRoot)
     if (!fixtureRootDir.exists()) {
       throw IllegalArgumentException("$fixtureRoot does not exist")
     }
 
     val environment = parser.build(fixtureRootDir.path, createAnnotationHolder(errors))
-    val fileWriter = writer ?: fileWriter@ { fileName: String ->
+    val fileWriter = writer ?: fileWriter@{ fileName: String ->
       val builder = StringBuilder()
       compilerOutput += File(fileName) to builder
       return@fileWriter builder
     }
 
-    var file: SqlDelightFile? = null
+    var file: SqlDelightQueriesFile? = null
+    var topMigration: MigrationFile? = null
 
     environment.forSourceFiles { psiFile ->
       psiFile.log(sourceFiles)
-      compilationMethod(environment.module, psiFile as SqlDelightFile, "testmodule", fileWriter)
-      file = psiFile
+      if (psiFile is SqlDelightQueriesFile) {
+        compilationMethod(environment.module, psiFile, "testmodule", fileWriter)
+        file = psiFile
+      } else if (psiFile is MigrationFile) {
+        if (topMigration == null || psiFile.order!! > topMigration!!.order!!) {
+          topMigration = psiFile
+        }
+      }
     }
 
-    if (generateDb) SqlDelightCompiler.writeImplementations(environment.module, file!!, "testmodule", fileWriter)
+    if (topMigration != null) {
+      SqlDelightCompiler.writeInterfaces(
+          module = environment.module,
+          file = topMigration!!,
+          implementationFolder = "testmodule",
+          output = fileWriter,
+          includeAll = true
+      )
+    }
+
+    if (generateDb) {
+      SqlDelightCompiler.writeDatabaseInterface(environment.module, file!!, "testmodule", fileWriter)
+      SqlDelightCompiler.writeImplementations(environment.module, file!!, "testmodule", fileWriter)
+    }
 
     return CompilationResult(outputDirectory, compilerOutput, errors, sourceFiles.toString(), file!!)
   }
 
   private fun createAnnotationHolder(
-      errors: MutableList<String>
+    errors: MutableList<String>
   ) = object : SqlAnnotationHolder {
     override fun createErrorAnnotation(element: PsiElement, s: String) {
       val documentManager = PsiDocumentManager.getInstance(element.project)
@@ -143,11 +167,11 @@ object FixtureCompiler {
   }
 
   data class CompilationResult(
-      val outputDirectory: File,
-      val compilerOutput: Map<File, StringBuilder>,
-      val errors: List<String>,
-      val sourceFiles: String,
-      val compiledFile: SqlDelightFile
+    val outputDirectory: File,
+    val compilerOutput: Map<File, StringBuilder>,
+    val errors: List<String>,
+    val sourceFiles: String,
+    val compiledFile: SqlDelightQueriesFile
   )
 }
 

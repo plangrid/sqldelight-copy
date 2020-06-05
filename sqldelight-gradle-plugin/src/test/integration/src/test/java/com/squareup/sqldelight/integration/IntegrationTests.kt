@@ -1,18 +1,15 @@
 package com.squareup.sqldelight.integration
 
+import com.google.common.truth.Truth.assertThat
+import com.squareup.sqldelight.ColumnAdapter
 import com.squareup.sqldelight.sqlite.driver.JdbcSqliteDriver
 import com.squareup.sqldelight.sqlite.driver.JdbcSqliteDriver.Companion.IN_MEMORY
-import com.squareup.sqldelight.db.SqlDriver
-import com.squareup.sqldelight.ColumnAdapter
 import java.util.Arrays
 import java.util.concurrent.CountDownLatch
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-
-import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit.SECONDS
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
 
 class IntegrationTests {
   private lateinit var queryWrapper: QueryWrapper
@@ -20,6 +17,7 @@ class IntegrationTests {
   private lateinit var keywordsQueries: SqliteKeywordsQueries
   private lateinit var nullableTypesQueries: NullableTypesQueries
   private lateinit var bigTableQueries: BigTableQueries
+  private lateinit var varargsQueries: VarargsQueries
 
   private object listAdapter : ColumnAdapter<List<String>, String> {
     override fun decode(databaseValue: String): List<String> = databaseValue.split(",")
@@ -35,36 +33,37 @@ class IntegrationTests {
     keywordsQueries = queryWrapper.sqliteKeywordsQueries
     nullableTypesQueries = queryWrapper.nullableTypesQueries
     bigTableQueries = queryWrapper.bigTableQueries
+    varargsQueries = queryWrapper.varargsQueries
   }
 
   @Test fun indexedArgs() {
     // ?1 is the only arg
     val person = personQueries.equivalentNames("Bob").executeAsOne()
-    assertThat(person).isEqualTo(Person.Impl(4, "Bob", "Bob"))
+    assertThat(person).isEqualTo(Person(4, "Bob", "Bob"))
   }
 
   @Test fun startIndexAtTwo() {
     // ?2 is the only arg
     val person = personQueries.equivalentNames2("Bob").executeAsOne()
-    assertThat(person).isEqualTo(Person.Impl(4, "Bob", "Bob"))
+    assertThat(person).isEqualTo(Person(4, "Bob", "Bob"))
   }
 
   @Test fun namedIndexArgs() {
     // :name is the only arg
     val person = personQueries.equivalentNamesNamed("Bob").executeAsOne()
-    assertThat(person).isEqualTo(Person.Impl(4, "Bob", "Bob"))
+    assertThat(person).isEqualTo(Person(4, "Bob", "Bob"))
   }
 
   @Test fun indexedArgLast() {
     // First arg declared is ?, second arg declared is ?1.
     val person = personQueries.indexedArgLast("Bob").executeAsOne()
-    assertThat(person).isEqualTo(Person.Impl(4, "Bob", "Bob"))
+    assertThat(person).isEqualTo(Person(4, "Bob", "Bob"))
   }
 
   @Test fun indexedArgLastTwo() {
     // First arg declared is ?, second arg declared is ?2.
     val person = personQueries.indexedArgLast2("Alec", "Strong").executeAsOne()
-    assertThat(person).isEqualTo(Person.Impl(1, "Alec", "Strong"))
+    assertThat(person).isEqualTo(Person(1, "Alec", "Strong"))
   }
 
   @Test fun nameIn() {
@@ -74,7 +73,7 @@ class IntegrationTests {
 
   @Test fun sqliteKeywordQuery() {
     val keywords = keywordsQueries.selectAll().executeAsOne()
-    assertThat(keywords).isEqualTo(Group.Impl(1, 10, 20))
+    assertThat(keywords).isEqualTo(Group(1, 10, 20))
   }
 
   @Test fun compiledStatement() {
@@ -111,9 +110,9 @@ class IntegrationTests {
 
   @Test
   fun nullableColumnsUseAdapterProperly() {
-    val cool = NullableTypes.Impl(listOf("Alec", "Matt", "Jake"), "Cool")
-    val notCool = NullableTypes.Impl(null, "Not Cool")
-    val nulled = NullableTypes.Impl(null, null)
+    val cool = NullableTypes(listOf("Alec", "Matt", "Jake"), "Cool")
+    val notCool = NullableTypes(null, "Not Cool")
+    val nulled = NullableTypes(null, null)
     nullableTypesQueries.insertNullableType(cool)
     nullableTypesQueries.insertNullableType(notCool)
     nullableTypesQueries.insertNullableType(nulled)
@@ -128,11 +127,22 @@ class IntegrationTests {
   }
 
   @Test fun bigTable() {
-    val bigTable = BigTable.Impl(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    val bigTable = BigTable(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
         20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30)
 
     bigTableQueries.insert(bigTable)
 
     assertThat(bigTableQueries.select().executeAsOne()).isEqualTo(bigTable)
+  }
+
+  @Test fun varargs() {
+    varargsQueries.insert(MyTable(1, 1, 10))
+    varargsQueries.insert(MyTable(2, 2, 10))
+    varargsQueries.insert(MyTable(3, 3, 10))
+
+    assertThat(varargsQueries.select(setOf(1, 2), 10).executeAsList()).containsExactly(
+        MyTable(1, 1, 10),
+        MyTable(2, 2, 10)
+    )
   }
 }

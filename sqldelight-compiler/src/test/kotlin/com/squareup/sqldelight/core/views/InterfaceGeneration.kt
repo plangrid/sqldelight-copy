@@ -4,10 +4,10 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
 import com.squareup.sqldelight.test.util.FixtureCompiler
 import com.squareup.sqldelight.test.util.withInvariantLineSeparators
+import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class InterfaceGeneration {
   @get:Rule val temporaryFolder = TemporaryFolder()
@@ -45,22 +45,16 @@ class InterfaceGeneration {
       |import kotlin.Boolean
       |import kotlin.String
       |
-      |interface SomeView {
-      |  val val_: Boolean
-      |
+      |data class SomeView(
+      |  val val_: Boolean,
       |  val val__: Boolean
-      |
-      |  data class Impl(
-      |    override val val_: Boolean,
-      |    override val val__: Boolean
-      |  ) : SomeView {
-      |    override fun toString(): String = ""${'"'}
-      |    |SomeView.Impl [
-      |    |  val_: ${"$"}val_
-      |    |  val__: ${"$"}val__
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
+      |) {
+      |  override fun toString(): String = ""${'"'}
+      |  |SomeView [
+      |  |  val_: ${"$"}val_
+      |  |  val__: ${"$"}val__
+      |  |]
+      |  ""${'"'}.trimMargin()
       |}
       |""".trimMargin())
   }
@@ -94,22 +88,16 @@ class InterfaceGeneration {
       |import kotlin.Boolean
       |import kotlin.String
       |
-      |interface SomeView {
-      |  val val_: Boolean
-      |
+      |data class SomeView(
+      |  val val_: Boolean,
       |  val val__: Boolean
-      |
-      |  data class Impl(
-      |    override val val_: Boolean,
-      |    override val val__: Boolean
-      |  ) : SomeView {
-      |    override fun toString(): String = ""${'"'}
-      |    |SomeView.Impl [
-      |    |  val_: ${"$"}val_
-      |    |  val__: ${"$"}val__
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
+      |) {
+      |  override fun toString(): String = ""${'"'}
+      |  |SomeView [
+      |  |  val_: ${"$"}val_
+      |  |  val__: ${"$"}val__
+      |  |]
+      |  ""${'"'}.trimMargin()
       |}
       |""".trimMargin())
   }
@@ -155,63 +143,45 @@ class InterfaceGeneration {
       |import kotlin.String
       |import kotlin.collections.contentToString
       |
-      |interface SomeView {
-      |  val arrayValue: Array<Int>
-      |
-      |  val booleanArrayValue: BooleanArray
-      |
-      |  val byteArrayValue: ByteArray
-      |
-      |  val charArrayValue: CharArray
-      |
-      |  val doubleArrayValue: DoubleArray
-      |
-      |  val floatArrayValue: FloatArray
-      |
-      |  val intArrayValue: IntArray
-      |
-      |  val longArrayValue: LongArray
-      |
-      |  val shortArrayValue: ShortArray
-      |
+      |data class SomeView(
+      |  val arrayValue: Array<Int>,
+      |  val booleanArrayValue: BooleanArray,
+      |  val byteArrayValue: ByteArray,
+      |  val charArrayValue: CharArray,
+      |  val doubleArrayValue: DoubleArray,
+      |  val floatArrayValue: FloatArray,
+      |  val intArrayValue: IntArray,
+      |  val longArrayValue: LongArray,
+      |  val shortArrayValue: ShortArray,
       |  val expr: Long
-      |
-      |  data class Impl(
-      |    override val arrayValue: Array<Int>,
-      |    override val booleanArrayValue: BooleanArray,
-      |    override val byteArrayValue: ByteArray,
-      |    override val charArrayValue: CharArray,
-      |    override val doubleArrayValue: DoubleArray,
-      |    override val floatArrayValue: FloatArray,
-      |    override val intArrayValue: IntArray,
-      |    override val longArrayValue: LongArray,
-      |    override val shortArrayValue: ShortArray,
-      |    override val expr: Long
-      |  ) : SomeView {
-      |    override fun toString(): String = ""${'"'}
-      |    |SomeView.Impl [
-      |    |  arrayValue: ${'$'}{arrayValue.contentToString()}
-      |    |  booleanArrayValue: ${'$'}{booleanArrayValue.contentToString()}
-      |    |  byteArrayValue: ${'$'}{byteArrayValue.contentToString()}
-      |    |  charArrayValue: ${'$'}{charArrayValue.contentToString()}
-      |    |  doubleArrayValue: ${'$'}{doubleArrayValue.contentToString()}
-      |    |  floatArrayValue: ${'$'}{floatArrayValue.contentToString()}
-      |    |  intArrayValue: ${'$'}{intArrayValue.contentToString()}
-      |    |  longArrayValue: ${'$'}{longArrayValue.contentToString()}
-      |    |  shortArrayValue: ${'$'}{shortArrayValue.contentToString()}
-      |    |  expr: ${'$'}expr
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
+      |) {
+      |  override fun toString(): String = ""${'"'}
+      |  |SomeView [
+      |  |  arrayValue: ${'$'}{arrayValue.contentToString()}
+      |  |  booleanArrayValue: ${'$'}{booleanArrayValue.contentToString()}
+      |  |  byteArrayValue: ${'$'}{byteArrayValue.contentToString()}
+      |  |  charArrayValue: ${'$'}{charArrayValue.contentToString()}
+      |  |  doubleArrayValue: ${'$'}{doubleArrayValue.contentToString()}
+      |  |  floatArrayValue: ${'$'}{floatArrayValue.contentToString()}
+      |  |  intArrayValue: ${'$'}{intArrayValue.contentToString()}
+      |  |  longArrayValue: ${'$'}{longArrayValue.contentToString()}
+      |  |  shortArrayValue: ${'$'}{shortArrayValue.contentToString()}
+      |  |  expr: ${'$'}expr
+      |  |]
+      |  ""${'"'}.trimMargin()
       |}
       |""".trimMargin())
   }
 
   private fun checkFixtureCompiles(fixtureRoot: String) {
     val result = FixtureCompiler.compileFixture(
-        "src/test/view-interface-fixtures/$fixtureRoot",
-        SqlDelightCompiler::writeViewInterfaces,
-        false)
+        fixtureRoot = "src/test/view-interface-fixtures/$fixtureRoot",
+        compilationMethod = { module, sqlDelightQueriesFile, folder, writer ->
+          SqlDelightCompiler.writeViewInterfaces(module, sqlDelightQueriesFile, folder, writer)
+        },
+        generateDb = false
+    )
+    assertThat(result.errors).isEmpty()
     for ((expectedFile, actualOutput) in result.compilerOutput) {
       assertThat(expectedFile.exists()).named("No file with name $expectedFile").isTrue()
       assertThat(expectedFile.readText().withInvariantLineSeparators())

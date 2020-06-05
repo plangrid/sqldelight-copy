@@ -6,10 +6,10 @@ import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
 import com.squareup.sqldelight.core.compiler.TableInterfaceGenerator
 import com.squareup.sqldelight.test.util.FixtureCompiler
 import com.squareup.sqldelight.test.util.withInvariantLineSeparators
+import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class InterfaceGeneration {
   @get:Rule val tempFolder = TemporaryFolder()
@@ -46,20 +46,15 @@ class InterfaceGeneration {
       |import kotlin.Int
       |import kotlin.String
       |
-      |interface Test {
+      |data class Test(
       |  val annotated: @SomeAnnotation(cheese = ["havarti","provalone"], age = 10, type = List::class,
       |      otherAnnotation = SomeOtherAnnotation("value")) Int?
-      |
-      |  data class Impl(
-      |    override val annotated: @SomeAnnotation(cheese = ["havarti","provalone"], age = 10, type =
-      |        List::class, otherAnnotation = SomeOtherAnnotation("value")) Int?
-      |  ) : Test {
-      |    override fun toString(): String = ""${'"'}
-      |    |Test.Impl [
-      |    |  annotated: ${"$"}annotated
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
+      |) {
+      |  override fun toString(): String = ""${'"'}
+      |  |Test [
+      |  |  annotated: ${"$"}annotated
+      |  |]
+      |  ""${'"'}.trimMargin()
       |}
       |""".trimMargin())
   }
@@ -82,30 +77,20 @@ class InterfaceGeneration {
       |
       |import kotlin.String
       |
-      |interface Test {
-      |  val is_cool: String
-      |
-      |  val get_cheese: String?
-      |
-      |  val isle: String?
-      |
+      |data class Test(
+      |  val is_cool: String,
+      |  val get_cheese: String?,
+      |  val isle: String?,
       |  val stuff: String?
-      |
-      |  data class Impl(
-      |    override val is_cool: String,
-      |    override val get_cheese: String?,
-      |    override val isle: String?,
-      |    override val stuff: String?
-      |  ) : Test {
-      |    override fun toString(): String = ""${'"'}
-      |    |Test.Impl [
-      |    |  is_cool: ${"$"}is_cool
-      |    |  get_cheese: ${"$"}get_cheese
-      |    |  isle: ${"$"}isle
-      |    |  stuff: ${"$"}stuff
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
+      |) {
+      |  override fun toString(): String = ""${'"'}
+      |  |Test [
+      |  |  is_cool: ${"$"}is_cool
+      |  |  get_cheese: ${"$"}get_cheese
+      |  |  isle: ${"$"}isle
+      |  |  stuff: ${"$"}stuff
+      |  |]
+      |  ""${'"'}.trimMargin()
       |}
       |""".trimMargin())
   }
@@ -124,48 +109,30 @@ class InterfaceGeneration {
       |);
       |""".trimMargin(), tempFolder)
 
-    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!)
-    assertThat(generator.kotlinInterfaceSpec().toString()).isEqualTo("""
-      |interface Test {
-      |  val intValue: kotlin.Int
-      |
-      |  val intValue2: kotlin.Int
-      |
-      |  val booleanValue: kotlin.Boolean
-      |
-      |  val shortValue: kotlin.Short
-      |
-      |  val longValue: kotlin.Long
-      |
-      |  val floatValue: kotlin.Float
-      |
-      |  val doubleValue: kotlin.Double
-      |
+    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!.tableExposed())
+    assertThat(generator.kotlinImplementationSpec().toString()).isEqualTo("""
+      |data class Test(
+      |  val intValue: kotlin.Int,
+      |  val intValue2: kotlin.Int,
+      |  val booleanValue: kotlin.Boolean,
+      |  val shortValue: kotlin.Short,
+      |  val longValue: kotlin.Long,
+      |  val floatValue: kotlin.Float,
+      |  val doubleValue: kotlin.Double,
       |  val blobValue: kotlin.ByteArray
-      |
-      |  data class Impl(
-      |    override val intValue: kotlin.Int,
-      |    override val intValue2: kotlin.Int,
-      |    override val booleanValue: kotlin.Boolean,
-      |    override val shortValue: kotlin.Short,
-      |    override val longValue: kotlin.Long,
-      |    override val floatValue: kotlin.Float,
-      |    override val doubleValue: kotlin.Double,
-      |    override val blobValue: kotlin.ByteArray
-      |  ) : com.example.Test {
-      |    override fun toString(): kotlin.String = ""${'"'}
-      |    |Test.Impl [
-      |    |  intValue: ${"$"}intValue
-      |    |  intValue2: ${"$"}intValue2
-      |    |  booleanValue: ${"$"}booleanValue
-      |    |  shortValue: ${"$"}shortValue
-      |    |  longValue: ${"$"}longValue
-      |    |  floatValue: ${"$"}floatValue
-      |    |  doubleValue: ${"$"}doubleValue
-      |    |  blobValue: ${"$"}{blobValue.kotlin.collections.contentToString()}
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
+      |) {
+      |  override fun toString(): kotlin.String = ""${'"'}
+      |  |Test [
+      |  |  intValue: ${"$"}intValue
+      |  |  intValue2: ${"$"}intValue2
+      |  |  booleanValue: ${"$"}booleanValue
+      |  |  shortValue: ${"$"}shortValue
+      |  |  longValue: ${"$"}longValue
+      |  |  floatValue: ${"$"}floatValue
+      |  |  doubleValue: ${"$"}doubleValue
+      |  |  blobValue: ${"$"}{blobValue.kotlin.collections.contentToString()}
+      |  |]
+      |  ""${'"'}.trimMargin()
       |}
       |""".trimMargin())
   }
@@ -185,9 +152,9 @@ class InterfaceGeneration {
       |);
       |""".trimMargin(), tempFolder)
 
-    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!)
+    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!.tableExposed())
     val file = FileSpec.builder("", "Test")
-        .addType(generator.kotlinInterfaceSpec())
+        .addType(generator.kotlinImplementationSpec())
         .build()
     assertThat(file.toString()).isEqualTo("""
       |import com.squareup.sqldelight.ColumnAdapter
@@ -204,24 +171,30 @@ class InterfaceGeneration {
       |import kotlin.String
       |import kotlin.collections.contentToString
       |
-      |interface Test {
-      |  val arrayValue: Array<Int>
-      |
-      |  val booleanArrayValue: BooleanArray
-      |
-      |  val byteArrayValue: ByteArray
-      |
-      |  val charArrayValue: CharArray
-      |
-      |  val doubleArrayValue: DoubleArray
-      |
-      |  val floatArrayValue: FloatArray
-      |
-      |  val intArrayValue: IntArray
-      |
-      |  val longArrayValue: LongArray
-      |
+      |data class Test(
+      |  val arrayValue: Array<Int>,
+      |  val booleanArrayValue: BooleanArray,
+      |  val byteArrayValue: ByteArray,
+      |  val charArrayValue: CharArray,
+      |  val doubleArrayValue: DoubleArray,
+      |  val floatArrayValue: FloatArray,
+      |  val intArrayValue: IntArray,
+      |  val longArrayValue: LongArray,
       |  val shortArrayValue: ShortArray
+      |) {
+      |  override fun toString(): String = ""${'"'}
+      |  |Test [
+      |  |  arrayValue: ${'$'}{arrayValue.contentToString()}
+      |  |  booleanArrayValue: ${'$'}{booleanArrayValue.contentToString()}
+      |  |  byteArrayValue: ${'$'}{byteArrayValue.contentToString()}
+      |  |  charArrayValue: ${'$'}{charArrayValue.contentToString()}
+      |  |  doubleArrayValue: ${'$'}{doubleArrayValue.contentToString()}
+      |  |  floatArrayValue: ${'$'}{floatArrayValue.contentToString()}
+      |  |  intArrayValue: ${'$'}{intArrayValue.contentToString()}
+      |  |  longArrayValue: ${'$'}{longArrayValue.contentToString()}
+      |  |  shortArrayValue: ${'$'}{shortArrayValue.contentToString()}
+      |  |]
+      |  ""${'"'}.trimMargin()
       |
       |  class Adapter(
       |    val arrayValueAdapter: ColumnAdapter<Array<Int>, ByteArray>,
@@ -234,32 +207,6 @@ class InterfaceGeneration {
       |    val longArrayValueAdapter: ColumnAdapter<LongArray, ByteArray>,
       |    val shortArrayValueAdapter: ColumnAdapter<ShortArray, ByteArray>
       |  )
-      |
-      |  data class Impl(
-      |    override val arrayValue: Array<Int>,
-      |    override val booleanArrayValue: BooleanArray,
-      |    override val byteArrayValue: ByteArray,
-      |    override val charArrayValue: CharArray,
-      |    override val doubleArrayValue: DoubleArray,
-      |    override val floatArrayValue: FloatArray,
-      |    override val intArrayValue: IntArray,
-      |    override val longArrayValue: LongArray,
-      |    override val shortArrayValue: ShortArray
-      |  ) : com.example.Test {
-      |    override fun toString(): String = ""${'"'}
-      |    |Test.Impl [
-      |    |  arrayValue: ${'$'}{arrayValue.contentToString()}
-      |    |  booleanArrayValue: ${'$'}{booleanArrayValue.contentToString()}
-      |    |  byteArrayValue: ${'$'}{byteArrayValue.contentToString()}
-      |    |  charArrayValue: ${'$'}{charArrayValue.contentToString()}
-      |    |  doubleArrayValue: ${'$'}{doubleArrayValue.contentToString()}
-      |    |  floatArrayValue: ${'$'}{floatArrayValue.contentToString()}
-      |    |  intArrayValue: ${'$'}{intArrayValue.contentToString()}
-      |    |  longArrayValue: ${'$'}{longArrayValue.contentToString()}
-      |    |  shortArrayValue: ${'$'}{shortArrayValue.contentToString()}
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
       |}
       |""".trimMargin())
   }
@@ -271,24 +218,20 @@ class InterfaceGeneration {
       |);
       |""".trimMargin(), tempFolder)
 
-    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!)
-    assertThat(generator.kotlinInterfaceSpec().toString()).isEqualTo("""
-      |interface Test {
+    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!.tableExposed())
+    assertThat(generator.kotlinImplementationSpec().toString()).isEqualTo("""
+      |data class Test(
       |  val mapValue: kotlin.collections.Map<kotlin.collections.List<kotlin.collections.List<String>>, kotlin.collections.List<kotlin.collections.List<String>>>?
+      |) {
+      |  override fun toString(): kotlin.String = ""${'"'}
+      |  |Test [
+      |  |  mapValue: ${"$"}mapValue
+      |  |]
+      |  ""${'"'}.trimMargin()
       |
       |  class Adapter(
       |    val mapValueAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Map<kotlin.collections.List<kotlin.collections.List<String>>, kotlin.collections.List<kotlin.collections.List<String>>>, kotlin.Long>
       |  )
-      |
-      |  data class Impl(
-      |    override val mapValue: kotlin.collections.Map<kotlin.collections.List<kotlin.collections.List<String>>, kotlin.collections.List<kotlin.collections.List<String>>>?
-      |  ) : com.example.Test {
-      |    override fun toString(): kotlin.String = ""${'"'}
-      |    |Test.Impl [
-      |    |  mapValue: ${"$"}mapValue
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
       |}
       |""".trimMargin())
   }
@@ -306,33 +249,25 @@ class InterfaceGeneration {
       |);
       |""".trimMargin(), tempFolder)
 
-    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!)
-    assertThat(generator.kotlinInterfaceSpec().toString()).isEqualTo("""
-      |interface Test {
-      |  val _id: kotlin.Long
-      |
-      |  val enabledDays: kotlin.collections.Set<java.time.DayOfWeek>?
-      |
+    val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!.tableExposed())
+    assertThat(generator.kotlinImplementationSpec().toString()).isEqualTo("""
+      |data class Test(
+      |  val _id: kotlin.Long,
+      |  val enabledDays: kotlin.collections.Set<java.time.DayOfWeek>?,
       |  val enabledWeeks: kotlin.collections.Set<com.gabrielittner.timetable.core.db.Week>?
+      |) {
+      |  override fun toString(): kotlin.String = ""${'"'}
+      |  |Test [
+      |  |  _id: ${"$"}_id
+      |  |  enabledDays: ${"$"}enabledDays
+      |  |  enabledWeeks: ${"$"}enabledWeeks
+      |  |]
+      |  ""${'"'}.trimMargin()
       |
       |  class Adapter(
       |    val enabledDaysAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Set<java.time.DayOfWeek>, kotlin.String>,
       |    val enabledWeeksAdapter: com.squareup.sqldelight.ColumnAdapter<kotlin.collections.Set<com.gabrielittner.timetable.core.db.Week>, kotlin.String>
       |  )
-      |
-      |  data class Impl(
-      |    override val _id: kotlin.Long,
-      |    override val enabledDays: kotlin.collections.Set<java.time.DayOfWeek>?,
-      |    override val enabledWeeks: kotlin.collections.Set<com.gabrielittner.timetable.core.db.Week>?
-      |  ) : com.example.Test {
-      |    override fun toString(): kotlin.String = ""${'"'}
-      |    |Test.Impl [
-      |    |  _id: ${"$"}_id
-      |    |  enabledDays: ${"$"}enabledDays
-      |    |  enabledWeeks: ${"$"}enabledWeeks
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
       |}
       |""".trimMargin())
   }
@@ -347,41 +282,34 @@ class InterfaceGeneration {
       |);
       |""".trimMargin(), tempFolder)
 
-        val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!)
-        assertThat(generator.kotlinInterfaceSpec().toString()).isEqualTo("""
-      |interface Group {
-      |  val index1: kotlin.String?
-      |
-      |  val index2: kotlin.String?
-      |
-      |  val index3: kotlin.String?
-      |
+        val generator = TableInterfaceGenerator(result.sqliteStatements().first().statement.createTableStmt!!.tableExposed())
+        assertThat(generator.kotlinImplementationSpec().toString()).isEqualTo("""
+      |data class Group(
+      |  val index1: kotlin.String?,
+      |  val index2: kotlin.String?,
+      |  val index3: kotlin.String?,
       |  val index4: kotlin.String?
-      |
-      |  data class Impl(
-      |    override val index1: kotlin.String?,
-      |    override val index2: kotlin.String?,
-      |    override val index3: kotlin.String?,
-      |    override val index4: kotlin.String?
-      |  ) : com.example.Group {
-      |    override fun toString(): kotlin.String = ""${'"'}
-      |    |Group.Impl [
-      |    |  index1: ${"$"}index1
-      |    |  index2: ${"$"}index2
-      |    |  index3: ${"$"}index3
-      |    |  index4: ${"$"}index4
-      |    |]
-      |    ""${'"'}.trimMargin()
-      |  }
+      |) {
+      |  override fun toString(): kotlin.String = ""${'"'}
+      |  |Group [
+      |  |  index1: ${"$"}index1
+      |  |  index2: ${"$"}index2
+      |  |  index3: ${"$"}index3
+      |  |  index4: ${"$"}index4
+      |  |]
+      |  ""${'"'}.trimMargin()
       |}
       |""".trimMargin())
     }
 
   private fun checkFixtureCompiles(fixtureRoot: String) {
     val result = FixtureCompiler.compileFixture(
-        "src/test/table-interface-fixtures/$fixtureRoot",
-        SqlDelightCompiler::writeTableInterfaces,
-        false)
+        fixtureRoot = "src/test/table-interface-fixtures/$fixtureRoot",
+        compilationMethod = { module, sqlDelightQueriesFile, folder, writer ->
+          SqlDelightCompiler.writeTableInterfaces(module, sqlDelightQueriesFile, folder, writer)
+        },
+        generateDb = false
+    )
     for ((expectedFile, actualOutput) in result.compilerOutput) {
       assertThat(expectedFile.exists()).named("No file with name $expectedFile").isTrue()
       assertThat(expectedFile.readText().withInvariantLineSeparators())

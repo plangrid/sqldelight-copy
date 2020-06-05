@@ -3,12 +3,13 @@ package com.squareup.sqldelight.gradle
 import com.squareup.sqldelight.VERSION
 import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightEnvironment
-import com.squareup.sqldelight.core.lang.SqlDelightFile
+import com.squareup.sqldelight.core.lang.SqlDelightQueriesFile
 import com.squareup.sqldelight.core.lang.util.forInitializationStatements
 import com.squareup.sqldelight.core.lang.util.rawSqlText
 import com.squareup.sqlite.migrations.CatalogDatabase
 import com.squareup.sqlite.migrations.DatabaseFilesCollector
 import com.squareup.sqlite.migrations.ObjectDifferDatabaseComparator
+import java.io.File
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
@@ -18,7 +19,6 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 open class VerifyMigrationTask : SourceTask() {
   @Suppress("unused") // Required to invalidate the task on version updates.
@@ -28,7 +28,7 @@ open class VerifyMigrationTask : SourceTask() {
   @Internal lateinit var workingDirectory: File
 
   @Internal lateinit var sourceFolders: Iterable<File>
-  @Internal @Input lateinit var properties: SqlDelightDatabaseProperties
+  @Input lateinit var properties: SqlDelightDatabaseProperties
 
   private val environment by lazy {
     SqlDelightEnvironment(
@@ -47,11 +47,13 @@ open class VerifyMigrationTask : SourceTask() {
     DatabaseFilesCollector.forDatabaseFiles(sourceFolders) {
       checkMigration(it, catalog)
     }
+
+    checkForGaps()
   }
 
   private fun createCurrentDb(): CatalogDatabase {
-    val sourceFiles = ArrayList<SqlDelightFile>()
-    environment.forSourceFiles { file -> sourceFiles.add(file as SqlDelightFile) }
+    val sourceFiles = ArrayList<SqlDelightQueriesFile>()
+    environment.forSourceFiles { file -> sourceFiles.add(file as SqlDelightQueriesFile) }
     val initStatements = ArrayList<String>()
     sourceFiles.forInitializationStatements { sqlText ->
       initStatements.add(sqlText)
@@ -83,6 +85,19 @@ open class VerifyMigrationTask : SourceTask() {
       }
     }
     return CatalogDatabase.fromFile(copy.absolutePath, initStatements).also { copy.delete() }
+  }
+
+  private fun checkForGaps() {
+    var lastMigrationVersion: Int? = null
+    environment.forMigrationFiles {
+      val actual = it.version
+      val expected = lastMigrationVersion?.plus(1) ?: actual
+      check(actual == expected) {
+        "Gap in migrations detected. Expected migration $expected, got $actual."
+      }
+
+      lastMigrationVersion = actual
+    }
   }
 
   @InputFiles

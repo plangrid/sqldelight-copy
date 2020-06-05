@@ -1,45 +1,52 @@
 package com.squareup.sqldelight.core.queries
 
+import com.alecstrong.sql.psi.core.DialectPreset
+import com.alecstrong.sql.psi.core.DialectPreset.HSQL
 import com.google.common.truth.Truth.assertThat
+import com.squareup.burst.BurstJUnit4
 import com.squareup.sqldelight.core.compiler.MutatorQueryGenerator
+import com.squareup.sqldelight.core.dialects.textType
 import com.squareup.sqldelight.test.util.FixtureCompiler
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
 
+@RunWith(BurstJUnit4::class)
 class MutatorQueryFunctionTest {
   @get:Rule val tempFolder = TemporaryFolder()
 
-  @Test fun `mutator method generates proper method signature`() {
+  @Test
+  fun `mutator method generates proper method signature`(dialect: DialectPreset) {
+    assumeTrue(dialect !in listOf(HSQL))
     val file = FixtureCompiler.parseSql("""
       |CREATE TABLE data (
-      |  id INTEGER NOT NULL PRIMARY KEY,
-      |  value TEXT AS kotlin.collections.List
+      |  value ${dialect.textType}
       |);
       |
       |insertData:
       |INSERT INTO data
-      |VALUES (?, ?);
-      """.trimMargin(), tempFolder)
+      |VALUES (:customTextValue);
+      """.trimMargin(), tempFolder, dialectPreset = dialect)
 
     val insert = file.namedMutators.first()
     val generator = MutatorQueryGenerator(insert)
 
     assertThat(generator.function().toString()).isEqualTo("""
-      |override fun insertData(id: kotlin.Long?, value: kotlin.collections.List?) {
+      |override fun insertData(customTextValue: kotlin.String?) {
       |  driver.execute(${insert.id}, ""${'"'}
       |  |INSERT INTO data
-      |  |VALUES (?1, ?2)
-      |  ""${'"'}.trimMargin(), 2) {
-      |    bindLong(1, id)
-      |    bindString(2, if (value == null) null else database.dataAdapter.valueAdapter.encode(value))
+      |  |VALUES (?)
+      |  ""${'"'}.trimMargin(), 1) {
+      |    bindString(1, customTextValue)
       |  }
       |}
       |""".trimMargin())
   }
 
   @Test fun `mutator method generates proper private value`() {
-     val file = FixtureCompiler.parseSql("""
+    val file = FixtureCompiler.parseSql("""
       |CREATE TABLE data (
       |  id INTEGER NOT NULL PRIMARY KEY,
       |  value TEXT AS kotlin.collections.List
@@ -57,7 +64,7 @@ class MutatorQueryFunctionTest {
       |override fun insertData(id: kotlin.Long?, value: kotlin.collections.List?) {
       |  driver.execute(${mutator.id}, ""${'"'}
       |  |INSERT INTO data
-      |  |VALUES (?1, ?2)
+      |  |VALUES (?, ?)
       |  ""${'"'}.trimMargin(), 2) {
       |    bindLong(1, id)
       |    bindString(2, if (value == null) null else database.dataAdapter.valueAdapter.encode(value))
@@ -88,7 +95,7 @@ class MutatorQueryFunctionTest {
   }
 
   @Test fun `mutator method generates proper private value for interface inserts`() {
-     val file = FixtureCompiler.parseSql("""
+    val file = FixtureCompiler.parseSql("""
       |CREATE TABLE data (
       |  id INTEGER NOT NULL PRIMARY KEY,
       |  value TEXT AS kotlin.collections.List
@@ -135,8 +142,8 @@ class MutatorQueryFunctionTest {
       |override fun updateData(newValue: kotlin.collections.List?, oldValue: kotlin.collections.List?) {
       |  driver.execute(null, ""${'"'}
       |  |UPDATE data
-      |  |SET value = ?1
-      |  |WHERE value ${"$"}{ if (oldValue == null) "IS" else "=" } ?2
+      |  |SET value = ?
+      |  |WHERE value ${"$"}{ if (oldValue == null) "IS" else "=" } ?
       |  ""${'"'}.trimMargin(), 2) {
       |    bindString(1, if (newValue == null) null else database.dataAdapter.valueAdapter.encode(newValue))
       |    bindString(2, if (oldValue == null) null else database.dataAdapter.valueAdapter.encode(oldValue))
@@ -219,7 +226,7 @@ class MutatorQueryFunctionTest {
       |override fun insertData(id: kotlin.Long?) {
       |  driver.execute(${mutator.id}, ""${'"'}
       |  |INSERT INTO data (id)
-      |  |VALUES (?1)
+      |  |VALUES (?)
       |  ""${'"'}.trimMargin(), 1) {
       |    bindLong(1, id)
       |  }
@@ -247,12 +254,12 @@ class MutatorQueryFunctionTest {
       |  val idIndexes = createArguments(count = id.size, offset = 2)
       |  driver.execute(null, ""${'"'}
       |  |UPDATE data
-      |  |SET value = ?1
+      |  |SET value = ?
       |  |WHERE id IN ${"$"}idIndexes
       |  ""${'"'}.trimMargin(), 1 + id.size) {
       |    bindString(1, if (value == null) null else database.dataAdapter.valueAdapter.encode(value))
-      |    id.forEachIndexed { index, id ->
-      |        bindLong(index + 2, id)
+      |    id.forEachIndexed { index, id_ ->
+      |        bindLong(index + 2, id_)
       |        }
       |  }
       |}
@@ -281,11 +288,12 @@ class MutatorQueryFunctionTest {
       |  driver.execute(${update.id}, ""${'"'}
       |  |UPDATE some_table
       |  |SET some_column = (
-      |  |  SELECT CASE WHEN ?1 IS NULL THEN some_column ELSE ?1 END
+      |  |  SELECT CASE WHEN ? IS NULL THEN some_column ELSE ? END
       |  |  FROM some_table
       |  |)
-      |  ""${'"'}.trimMargin(), 1) {
+      |  ""${'"'}.trimMargin(), 2) {
       |    bindLong(1, some_column)
+      |    bindLong(2, some_column)
       |  }
       |}
       |""".trimMargin())
@@ -321,15 +329,43 @@ class MutatorQueryFunctionTest {
       |) {
       |  driver.execute(${mutator.id}, ""${'"'}
       |  |UPDATE paymentHistoryConfig
-      |  |SET a = ?1,
-      |  |    b = ?2,
-      |  |    c = ?3,
-      |  |    d = ?4
+      |  |SET a = ?,
+      |  |    b = ?,
+      |  |    c = ?,
+      |  |    d = ?
       |  ""${'"'}.trimMargin(), 4) {
       |    bindString(1, a)
       |    bindString(2, b)
       |    bindBytes(3, if (c == null) null else database.paymentHistoryConfigAdapter.cAdapter.encode(c))
       |    bindBytes(4, if (d == null) null else database.paymentHistoryConfigAdapter.dAdapter.encode(d))
+      |  }
+      |}
+      |""".trimMargin())
+  }
+
+  @Test fun `mutator method generates proper method signature for all nullable fields`() {
+    val file = FixtureCompiler.parseSql("""
+      |CREATE TABLE nullableTypes (
+      |  val1 TEXT AS kotlin.collections.List<String>,
+      |  val2 TEXT
+      |);
+      |
+      |insertNullableType:
+      |INSERT INTO nullableTypes
+      |VALUES ?;
+      """.trimMargin(), tempFolder)
+
+    val insert = file.namedMutators.first()
+    val generator = MutatorQueryGenerator(insert)
+
+    assertThat(generator.function().toString()).isEqualTo("""
+      |override fun insertNullableType(nullableTypes: com.example.NullableTypes) {
+      |  driver.execute(${insert.id}, ""${'"'}
+      |  |INSERT INTO nullableTypes
+      |  |VALUES (?, ?)
+      |  ""${'"'}.trimMargin(), 2) {
+      |    bindString(1, if (nullableTypes.val1 == null) null else database.nullableTypesAdapter.val1Adapter.encode(nullableTypes.val1!!))
+      |    bindString(2, nullableTypes.val2)
       |  }
       |}
       |""".trimMargin())

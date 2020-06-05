@@ -15,12 +15,12 @@ import com.squareup.sqldelight.core.SqlDelightPropertiesFile
 import com.squareup.sqldelight.core.SqlDelightSourceFolder
 import com.squareup.sqldelight.core.SqldelightParserUtil
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
-import com.squareup.sqldelight.core.lang.SqlDelightFile
 import com.squareup.sqldelight.core.lang.SqlDelightFileType
+import com.squareup.sqldelight.core.lang.SqlDelightQueriesFile
 import com.squareup.sqldelight.intellij.util.GeneratedVirtualFile
-import org.jetbrains.kotlin.psi.psiUtil.getNonStrictParentOfType
 import java.io.File
 import java.io.PrintStream
+import org.jetbrains.kotlin.psi.psiUtil.getNonStrictParentOfType
 
 abstract class SqlDelightProjectTestCase : LightCodeInsightFixtureTestCase() {
   protected val tempRoot: VirtualFile
@@ -59,7 +59,7 @@ abstract class SqlDelightProjectTestCase : LightCodeInsightFixtureTestCase() {
     )
   }
 
-  protected inline fun <reified T: PsiElement> searchForElement(text: String): Collection<T> {
+  protected inline fun <reified T : PsiElement> searchForElement(text: String): Collection<T> {
     return PsiTreeUtil.collectElements(file) {
       it is LeafPsiElement && it.text == text
     }.mapNotNull { it.getNonStrictParentOfType<T>() }
@@ -71,14 +71,15 @@ abstract class SqlDelightProjectTestCase : LightCodeInsightFixtureTestCase() {
       val vFile: VirtualFile by GeneratedVirtualFile(filePath, module)
       PrintStream(vFile.getOutputStream(this))
     }
-    var fileToGenerateDb: SqlDelightFile? = null
+    var fileToGenerateDb: SqlDelightQueriesFile? = null
     module.rootManager.fileIndex.iterateContentUnderDirectory(mainDir) { file ->
       if (file.fileType != SqlDelightFileType) return@iterateContentUnderDirectory true
-      val sqlFile = (psiManager.findFile(file)!! as SqlDelightFile)
+      val sqlFile = (psiManager.findFile(file)!! as SqlDelightQueriesFile)
       sqlFile.viewProvider.contentsSynchronized()
       fileToGenerateDb = sqlFile
       return@iterateContentUnderDirectory true
     }
     SqlDelightCompiler.writeInterfaces(module, fileToGenerateDb!!, module.name, virtualFileWriter)
+    SqlDelightCompiler.writeDatabaseInterface(module, fileToGenerateDb!!, module.name, virtualFileWriter)
   }
 }

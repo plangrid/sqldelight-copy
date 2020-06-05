@@ -5,6 +5,7 @@ import com.example.Player
 import com.example.PlayerQueries
 import com.example.SelectNull
 import com.example.Team
+import com.example.TeamForCoach
 import com.example.TeamQueries
 import com.example.TestDatabase
 import com.squareup.sqldelight.Query
@@ -96,28 +97,23 @@ private class TeamQueriesImpl(
 
   internal val forInnerType: MutableList<Query<*>> = copyOnWriteList()
 
-  override fun <T : Any> teamForCoach(coach: String, mapper: (
-    name: String,
-    captain: Long,
-    inner_type: Shoots.Type?,
-    coach: String
-  ) -> T): Query<T> = TeamForCoach(coach) { cursor ->
+  override fun <T : Any> teamForCoach(coach: String, mapper: (name: String, captain: Long) -> T):
+      Query<T> = TeamForCoachQuery(coach) { cursor ->
     mapper(
       cursor.getString(0)!!,
-      cursor.getLong(1)!!,
-      cursor.getString(2)?.let(database.teamAdapter.inner_typeAdapter::decode),
-      cursor.getString(3)!!
+      cursor.getLong(1)!!
     )
   }
 
-  override fun teamForCoach(coach: String): Query<Team> = teamForCoach(coach, Team::Impl)
+  override fun teamForCoach(coach: String): Query<TeamForCoach> = teamForCoach(coach,
+      ::TeamForCoach)
 
   override fun <T : Any> forInnerType(inner_type: Shoots.Type?, mapper: (
     name: String,
     captain: Long,
     inner_type: Shoots.Type?,
     coach: String
-  ) -> T): Query<T> = ForInnerType(inner_type) { cursor ->
+  ) -> T): Query<T> = ForInnerTypeQuery(inner_type) { cursor ->
     mapper(
       cursor.getString(0)!!,
       cursor.getLong(1)!!,
@@ -127,17 +123,17 @@ private class TeamQueriesImpl(
   }
 
   override fun forInnerType(inner_type: Shoots.Type?): Query<Team> = forInnerType(inner_type,
-      Team::Impl)
+      ::Team)
 
-  private inner class TeamForCoach<out T : Any>(
+  private inner class TeamForCoachQuery<out T : Any>(
     @JvmField
     val coach: String,
     mapper: (SqlCursor) -> T
   ) : Query<T>(teamForCoach, mapper) {
     override fun execute(): SqlCursor = driver.executeQuery(1839882838, """
-    |SELECT *
+    |SELECT name, captain
     |FROM team
-    |WHERE coach = ?1
+    |WHERE coach = ?
     """.trimMargin(), 1) {
       bindString(1, coach)
     }
@@ -145,7 +141,7 @@ private class TeamQueriesImpl(
     override fun toString(): String = "Team.sq:teamForCoach"
   }
 
-  private inner class ForInnerType<out T : Any>(
+  private inner class ForInnerTypeQuery<out T : Any>(
     @JvmField
     val inner_type: Shoots.Type?,
     mapper: (SqlCursor) -> T
@@ -153,7 +149,7 @@ private class TeamQueriesImpl(
     override fun execute(): SqlCursor = driver.executeQuery(null, """
     |SELECT *
     |FROM team
-    |WHERE inner_type ${ if (inner_type == null) "IS" else "=" } ?1
+    |WHERE inner_type ${ if (inner_type == null) "IS" else "=" } ?
     """.trimMargin(), 1) {
       bindString(1, if (inner_type == null) null else
           database.teamAdapter.inner_typeAdapter.encode(inner_type))
@@ -192,14 +188,14 @@ private class PlayerQueriesImpl(
     )
   }
 
-  override fun allPlayers(): Query<Player> = allPlayers(Player::Impl)
+  override fun allPlayers(): Query<Player> = allPlayers(::Player)
 
   override fun <T : Any> playersForTeam(team: String?, mapper: (
     name: String,
     number: Long,
     team: String?,
     shoots: Shoots
-  ) -> T): Query<T> = PlayersForTeam(team) { cursor ->
+  ) -> T): Query<T> = PlayersForTeamQuery(team) { cursor ->
     mapper(
       cursor.getString(0)!!,
       cursor.getLong(1)!!,
@@ -208,14 +204,14 @@ private class PlayerQueriesImpl(
     )
   }
 
-  override fun playersForTeam(team: String?): Query<Player> = playersForTeam(team, Player::Impl)
+  override fun playersForTeam(team: String?): Query<Player> = playersForTeam(team, ::Player)
 
   override fun <T : Any> playersForNumbers(number: Collection<Long>, mapper: (
     name: String,
     number: Long,
     team: String?,
     shoots: Shoots
-  ) -> T): Query<T> = PlayersForNumbers(number) { cursor ->
+  ) -> T): Query<T> = PlayersForNumbersQuery(number) { cursor ->
     mapper(
       cursor.getString(0)!!,
       cursor.getLong(1)!!,
@@ -225,7 +221,7 @@ private class PlayerQueriesImpl(
   }
 
   override fun playersForNumbers(number: Collection<Long>): Query<Player> =
-      playersForNumbers(number, Player::Impl)
+      playersForNumbers(number, ::Player)
 
   override fun <T : Any> selectNull(mapper: (expr: Void?) -> T): Query<T> = Query(106890351,
       selectNull, driver, "Player.sq", "selectNull", "SELECT NULL") { cursor ->
@@ -234,7 +230,7 @@ private class PlayerQueriesImpl(
     )
   }
 
-  override fun selectNull(): Query<SelectNull> = selectNull(SelectNull::Impl)
+  override fun selectNull(): Query<SelectNull> = selectNull(::SelectNull)
 
   override fun insertPlayer(
     name: String,
@@ -244,7 +240,7 @@ private class PlayerQueriesImpl(
   ) {
     driver.execute(-1595716666, """
     |INSERT INTO player
-    |VALUES (?1, ?2, ?3, ?4)
+    |VALUES (?, ?, ?, ?)
     """.trimMargin(), 4) {
       bindString(1, name)
       bindLong(2, number)
@@ -259,12 +255,12 @@ private class PlayerQueriesImpl(
     val numberIndexes = createArguments(count = number.size, offset = 2)
     driver.execute(null, """
     |UPDATE player
-    |SET team = ?1
+    |SET team = ?
     |WHERE number IN $numberIndexes
     """.trimMargin(), 1 + number.size) {
       bindString(1, team)
-      number.forEachIndexed { index, number ->
-          bindLong(index + 2, number)
+      number.forEachIndexed { index, number_ ->
+          bindLong(index + 2, number_)
           }
     }
     notifyQueries(-636585613, {database.playerQueries.allPlayers +
@@ -279,7 +275,7 @@ private class PlayerQueriesImpl(
     driver.execute(2046279987, """PRAGMA foreign_keys = 0""", 0)
   }
 
-  private inner class PlayersForTeam<out T : Any>(
+  private inner class PlayersForTeamQuery<out T : Any>(
     @JvmField
     val team: String?,
     mapper: (SqlCursor) -> T
@@ -287,7 +283,7 @@ private class PlayerQueriesImpl(
     override fun execute(): SqlCursor = driver.executeQuery(null, """
     |SELECT *
     |FROM player
-    |WHERE team ${ if (team == null) "IS" else "=" } ?1
+    |WHERE team ${ if (team == null) "IS" else "=" } ?
     """.trimMargin(), 1) {
       bindString(1, team)
     }
@@ -295,7 +291,7 @@ private class PlayerQueriesImpl(
     override fun toString(): String = "Player.sq:playersForTeam"
   }
 
-  private inner class PlayersForNumbers<out T : Any>(
+  private inner class PlayersForNumbersQuery<out T : Any>(
     @JvmField
     val number: Collection<Long>,
     mapper: (SqlCursor) -> T
@@ -307,8 +303,8 @@ private class PlayerQueriesImpl(
       |FROM player
       |WHERE number IN $numberIndexes
       """.trimMargin(), number.size) {
-        number.forEachIndexed { index, number ->
-            bindLong(index + 1, number)
+        number.forEachIndexed { index, number_ ->
+            bindLong(index + 1, number_)
             }
       }
     }

@@ -20,10 +20,11 @@ import com.intellij.psi.PsiDirectory
 import com.intellij.psi.util.PsiTreeUtil
 import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightFileIndex
+import com.squareup.sqldelight.core.lang.MigrationFile
 import com.squareup.sqldelight.core.lang.SqlDelightFile
 import com.squareup.sqldelight.intellij.util.isAncestorOf
-import org.jetbrains.kotlin.idea.core.util.toPsiDirectory
 import java.io.File
+import org.jetbrains.kotlin.idea.core.util.toPsiDirectory
 
 class FileIndex(
   private val properties: SqlDelightDatabaseProperties,
@@ -34,6 +35,11 @@ class FileIndex(
   override val outputDirectory = properties.outputDirectory.replace(File.separatorChar, '/')
   override val className = properties.className
   override val dependencies = properties.dependencies
+
+  override fun ordering(file: MigrationFile): Int? {
+    if (!properties.deriveSchemaFromMigrations) return null
+    return file.virtualFile.nameWithoutExtension.filter { it in '0'..'9' }.toInt()
+  }
 
   override fun packageName(file: SqlDelightFile): String {
     val original = if (file.parent == null) {

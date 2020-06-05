@@ -117,6 +117,8 @@ data class NamedQuery(
   internal val queryProperty =
       CodeBlock.of("$CUSTOM_DATABASE_NAME.${select.sqFile().queriesName}.$name")
 
+  internal val customQuerySubtype = "${name.capitalize()}Query"
+
   private fun resultColumns(valuesList: List<SqlValuesExpression>): List<IntermediateType> {
     return valuesList.fold(emptyList(), { results, values ->
       val exposedTypes = values.exprList.map { it.type() }
@@ -167,9 +169,8 @@ data class NamedQuery(
   }
 
   override val id: Int
-    //the sqlFile package name -> com.example.
-    //sqlFile.name -> test.sq
-    //name -> query name
-    get() = getUniqueQueryIdentifier(statement.sqFile().let { "${it.packageName}:${it.name}:${name}" })
+    // the sqlFile package name -> com.example.
+    // sqlFile.name -> test.sq
+    // name -> query name
+    get() = getUniqueQueryIdentifier(statement.sqFile().let { "${it.packageName}:${it.name}:$name" })
 }
-

@@ -6,10 +6,13 @@ import com.alecstrong.sql.psi.core.SqlCoreEnvironment
 import com.intellij.psi.PsiElement
 import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightEnvironment
-import com.squareup.sqldelight.core.SqldelightParserUtil
 import java.io.File
 
-internal class TestEnvironment(private val outputDirectory: File = File("output")) {
+internal class TestEnvironment(
+  private val outputDirectory: File = File("output"),
+  private val deriveSchemaFromMigrations: Boolean = false,
+  private val dialectPreset: DialectPreset = DialectPreset.SQLITE_3_18
+) {
   fun build(root: String): SqlCoreEnvironment {
     return build(root, object : SqlAnnotationHolder {
       override fun createErrorAnnotation(element: PsiElement, s: String) {
@@ -18,7 +21,10 @@ internal class TestEnvironment(private val outputDirectory: File = File("output"
     })
   }
 
-  fun build(root: String, annotationHolder: SqlAnnotationHolder): SqlDelightEnvironment {
+  fun build(
+    root: String,
+    annotationHolder: SqlAnnotationHolder
+  ): SqlDelightEnvironment {
     val environment = SqlDelightEnvironment(
         sourceFolders = listOf(File(root)),
         dependencyFolders = emptyList(),
@@ -28,10 +34,12 @@ internal class TestEnvironment(private val outputDirectory: File = File("output"
             dependencies = emptyList(),
             compilationUnits = emptyList(),
             outputDirectory = outputDirectory.absolutePath,
-            dialectPreset = DialectPreset.SQLITE_3_18
+            dialectPreset = dialectPreset,
+            deriveSchemaFromMigrations = deriveSchemaFromMigrations
         ),
         outputDirectory = outputDirectory,
-        moduleName = "testmodule"
+        // hyphen in the name tests that our module name sanitizing works correctly
+        moduleName = "test-module"
     )
     environment.annotate(annotationHolder)
     return environment

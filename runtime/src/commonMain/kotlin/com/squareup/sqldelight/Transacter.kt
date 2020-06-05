@@ -126,10 +126,8 @@ abstract class TransacterImpl(private val driver: SqlDriver) : Transacter {
 
     return buildString(presizeArguments(count, offset)) {
       append("(?")
-      append(offset)
       for (value in offset + 1 until offset + count) {
         append(",?")
-        append(value)
       }
       append(')')
     }
@@ -180,7 +178,7 @@ abstract class TransacterImpl(private val driver: SqlDriver) : Transacter {
           transaction.postRollbackHooks.clear()
         } else {
           transaction.queriesFuncs
-                  .flatMap { (_, queryListSupplier) -> queryListSupplier.run()}
+                  .flatMap { (_, queryListSupplier) -> queryListSupplier.run() }
                   .distinct()
                   .forEach { it.notifyDataChanged() }
 

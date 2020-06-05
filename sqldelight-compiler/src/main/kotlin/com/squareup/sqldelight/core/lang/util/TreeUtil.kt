@@ -21,6 +21,7 @@ import com.alecstrong.sql.psi.core.psi.SqlCreateTableStmt
 import com.alecstrong.sql.psi.core.psi.SqlCreateViewStmt
 import com.alecstrong.sql.psi.core.psi.SqlCreateVirtualTableStmt
 import com.alecstrong.sql.psi.core.psi.SqlExpr
+import com.alecstrong.sql.psi.core.psi.SqlModuleArgument
 import com.alecstrong.sql.psi.core.psi.SqlTableName
 import com.alecstrong.sql.psi.core.psi.SqlTypes
 import com.intellij.psi.PsiElement
@@ -31,19 +32,19 @@ import com.squareup.sqldelight.core.lang.IntermediateType
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.INTEGER
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.TEXT
 import com.squareup.sqldelight.core.lang.SqlDelightFile
+import com.squareup.sqldelight.core.lang.SqlDelightQueriesFile
 import com.squareup.sqldelight.core.lang.acceptsTableInterface
 import com.squareup.sqldelight.core.lang.psi.ColumnDefMixin
 import com.squareup.sqldelight.core.lang.psi.InsertStmtValuesMixin
 
-internal inline fun <reified R: PsiElement> PsiElement.parentOfType(): R {
+internal inline fun <reified R : PsiElement> PsiElement.parentOfType(): R {
   return PsiTreeUtil.getParentOfType(this, R::class.java)!!
 }
 
 internal fun PsiElement.type(): IntermediateType = when (this) {
   is AliasElement -> source().type().copy(name = name)
   is SqlColumnName -> {
-    val parentRule = parent!!
-    when (parentRule) {
+    when (val parentRule = parent!!) {
       is ColumnDefMixin -> parentRule.type()
       is SqlCreateVirtualTableStmt -> IntermediateType(TEXT, name = this.name)
       else -> {
@@ -71,7 +72,7 @@ private fun synthesizedColumnType(columnName: String): IntermediateType {
 
 internal fun PsiElement.sqFile(): SqlDelightFile = containingFile as SqlDelightFile
 
-inline fun <reified T: PsiElement> PsiElement.findChildrenOfType(): Collection<T> {
+inline fun <reified T : PsiElement> PsiElement.findChildrenOfType(): Collection<T> {
   return PsiTreeUtil.findChildrenOfType(this, T::class.java)
 }
 
@@ -83,7 +84,7 @@ fun PsiElement.childOfType(types: TokenSet): PsiElement? {
   return node.findChildByType(types)?.psi
 }
 
-inline fun <reified T: PsiElement> PsiElement.nextSiblingOfType(): T {
+inline fun <reified T : PsiElement> PsiElement.nextSiblingOfType(): T {
   return PsiTreeUtil.getNextSiblingOfType(this, T::class.java)!!
 }
 
@@ -92,6 +93,13 @@ private fun PsiElement.rangesToReplace(): List<Pair<IntRange, String>> {
     listOf(Pair(
         first = (typeName.node.startOffset + typeName.node.textLength) until
             (javaTypeName!!.node.startOffset + javaTypeName!!.node.textLength),
+        second = ""
+    ))
+  } else if (this is SqlModuleArgument && moduleArgumentDef?.columnDef != null && (parent as SqlCreateVirtualTableStmt).moduleName?.text == "fts5") {
+    val columnDef = moduleArgumentDef!!.columnDef!!
+    listOf(Pair(
+        first = (columnDef.columnName.node.startOffset + columnDef.columnName.node.textLength) until
+                (columnDef.columnName.node.startOffset + columnDef.node.textLength),
         second = ""
     ))
   } else if (this is InsertStmtValuesMixin && parent.acceptsTableInterface()) {
@@ -125,7 +133,7 @@ fun PsiElement.rawSqlText(
 internal val PsiElement.range: IntRange
   get() = node.startOffset until (node.startOffset + node.textLength)
 
-fun Collection<SqlDelightFile>.forInitializationStatements(
+fun Collection<SqlDelightQueriesFile>.forInitializationStatements(
   body: (sqlText: String) -> Unit
 ) {
   val views = ArrayList<SqlCreateViewStmt>()

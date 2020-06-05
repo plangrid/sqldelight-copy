@@ -2,10 +2,10 @@ package com.squareup.sqldelight.core
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.sqldelight.test.util.FixtureCompiler
+import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class QueriesTypeTest {
   @get:Rule val temporaryFolder = TemporaryFolder()
@@ -94,19 +94,19 @@ class QueriesTypeTest {
       |  internal val selectForId: MutableList<Query<*>> = copyOnWriteList()
       |
       |  override fun <T : Any> selectForId(id: Long, mapper: (id: Long, value: List?) -> T): Query<T> =
-      |      SelectForId(id) { cursor ->
+      |      SelectForIdQuery(id) { cursor ->
       |    mapper(
       |      cursor.getLong(0)!!,
       |      cursor.getString(1)?.let(database.dataAdapter.valueAdapter::decode)
       |    )
       |  }
       |
-      |  override fun selectForId(id: Long): Query<Data> = selectForId(id, Data::Impl)
+      |  override fun selectForId(id: Long): Query<Data> = selectForId(id, ::Data)
       |
       |  override fun insertData(id: Long?, value: List?) {
       |    driver.execute(${insert.id}, ""${'"'}
       |    |INSERT INTO data
-      |    |VALUES (?1, ?2)
+      |    |VALUES (?, ?)
       |    ""${'"'}.trimMargin(), 2) {
       |      bindLong(1, id)
       |      bindString(2, if (value == null) null else database.dataAdapter.valueAdapter.encode(value))
@@ -114,7 +114,7 @@ class QueriesTypeTest {
       |    notifyQueries(${insert.id}, {database.dataQueries.selectForId})
       |  }
       |
-      |  private inner class SelectForId<out T : Any>(
+      |  private inner class SelectForIdQuery<out T : Any>(
       |    @JvmField
       |    val id: Long,
       |    mapper: (SqlCursor) -> T
@@ -122,7 +122,7 @@ class QueriesTypeTest {
       |    override fun execute(): SqlCursor = driver.executeQuery(${select.id}, ""${'"'}
       |    |SELECT *
       |    |FROM data
-      |    |WHERE id = ?1
+      |    |WHERE id = ?
       |    ""${'"'}.trimMargin(), 1) {
       |      bindLong(1, id)
       |    }

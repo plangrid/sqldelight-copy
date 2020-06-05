@@ -24,10 +24,10 @@ import com.intellij.psi.tree.IFileElementType
 import com.squareup.sqldelight.core.SqlDelightProjectService
 import com.squareup.sqldelight.core.SqldelightParserUtil
 
-class SqlDelightParserDefinition: SqlParserDefinition() {
+class SqlDelightParserDefinition : SqlParserDefinition() {
   private var dialect: DialectPreset? = null
 
-  override fun createFile(viewProvider: FileViewProvider) = SqlDelightFile(viewProvider)
+  override fun createFile(viewProvider: FileViewProvider) = SqlDelightQueriesFile(viewProvider)
   override fun getFileNodeType() = FILE
   override fun getLanguage() = SqlDelightLanguage
 
