@@ -5,19 +5,18 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.joinToCode
 import com.squareup.sqldelight.core.compiler.model.NamedMutator
 import com.squareup.sqldelight.core.compiler.model.NamedQuery
-import com.squareup.sqldelight.core.lang.SqlDelightFile
+import com.squareup.sqldelight.core.lang.SqlDelightQueriesFile
 import com.squareup.sqldelight.core.lang.util.childOfType
 import com.squareup.sqldelight.core.lang.util.referencedTables
-import com.squareup.sqldelight.core.lang.util.sqFile
 
 class MutatorQueryGenerator(
   private val query: NamedMutator
 ) : ExecuteQueryGenerator(query) {
 
-  override fun FunSpec.Builder.notifyQueries() : FunSpec.Builder {
+  override fun FunSpec.Builder.notifyQueries(): FunSpec.Builder {
     val resultSetsUpdated = mutableListOf<NamedQuery>()
-    query.statement.sqFile().iterateSqlFiles { psiFile ->
-      if (psiFile !is SqlDelightFile) return@iterateSqlFiles true
+    query.containingFile.iterateSqlFiles { psiFile ->
+      if (psiFile !is SqlDelightQueriesFile) return@iterateSqlFiles true
       val tablesAffected = mutableListOf(query.tableEffected)
 
       psiFile.triggers.forEach { trigger ->
@@ -40,7 +39,7 @@ class MutatorQueryGenerator(
               it.tableName.referencedTables().single()
             }
             tablesAffected += trigger.deleteStmtList.map {
-              it.qualifiedTableName.tableName.referencedTables().single()
+              it.qualifiedTableName!!.tableName.referencedTables().single()
             }
             tablesAffected += trigger.updateStmtList.map {
               it.qualifiedTableName.tableName.referencedTables().single()

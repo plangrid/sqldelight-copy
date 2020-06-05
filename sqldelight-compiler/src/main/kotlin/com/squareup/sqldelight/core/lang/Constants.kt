@@ -1,11 +1,9 @@
 package com.squareup.sqldelight.core.lang
 
-import com.alecstrong.sql.psi.core.psi.SqlCreateTableStmt
 import com.intellij.openapi.vfs.VirtualFile
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
-import com.squareup.sqldelight.core.compiler.SqlDelightCompiler.allocateName
 
 internal val CURSOR_TYPE = ClassName("com.squareup.sqldelight.db", "SqlCursor")
 internal val CURSOR_NAME = "cursor"
@@ -16,12 +14,7 @@ internal val DATABASE_SCHEMA_TYPE = DRIVER_TYPE.nestedClass("Schema")
 
 internal val CUSTOM_DATABASE_NAME = "database"
 
-internal val IMPLEMENTATION_NAME = "Impl"
-
 internal val ADAPTER_NAME = "Adapter"
-
-internal val SqlCreateTableStmt.adapterName
-  get() = "${allocateName(tableName)}$ADAPTER_NAME"
 
 internal val QUERY_TYPE = ClassName("com.squareup.sqldelight", "Query")
 
@@ -39,8 +32,8 @@ internal val SqlDelightFile.queriesName
   get() = "${virtualFile!!.nameWithoutExtension.decapitalize()}Queries"
 internal val SqlDelightFile.queriesType
   get() = ClassName(packageName, "${virtualFile!!.nameWithoutExtension.capitalize()}Queries")
-internal fun SqlDelightFile.queriesImplType(implementationPackage: String)
-  = ClassName(implementationPackage, "${virtualFile!!.nameWithoutExtension.capitalize()}QueriesImpl")
+internal fun SqlDelightFile.queriesImplType(implementationPackage: String) =
+  ClassName(implementationPackage, "${virtualFile!!.nameWithoutExtension.capitalize()}QueriesImpl")
 
 internal val TRANSACTER_TYPE = ClassName("com.squareup.sqldelight", "Transacter")
 internal val TRANSACTER_IMPL_TYPE = ClassName("com.squareup.sqldelight", "TransacterImpl")

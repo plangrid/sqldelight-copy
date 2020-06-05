@@ -2,6 +2,7 @@ package com.squareup.sqldelight.core.integration
 
 import com.example.Player
 import com.example.Team
+import com.example.TeamForCoach
 import com.example.TestDatabase
 import com.google.common.truth.Truth.assertThat
 import com.squareup.sqldelight.EnumColumnAdapter
@@ -14,12 +15,12 @@ import com.squareup.sqldelight.sqlite.driver.JdbcSqliteDriver
 import com.squareup.sqldelight.sqlite.driver.JdbcSqliteDriver.Companion.IN_MEMORY
 import com.squareup.sqldelight.test.util.FixtureCompiler
 import com.squareup.sqldelight.test.util.fixtureRoot
+import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
-import java.util.concurrent.atomic.AtomicInteger
 
 class IntegrationTest {
   private lateinit var driver: SqlDriver
@@ -93,7 +94,7 @@ class IntegrationTest {
         |       ('Ottawa Senators', 65, 'ONE', 'Guy Boucher');
         |
         |teamForCoach:
-        |SELECT *
+        |SELECT name, captain
         |FROM team
         |WHERE coach = ?;
         |
@@ -155,8 +156,8 @@ class IntegrationTest {
     })
 
     assertThat(allPlayers.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
-        Player.Impl("Erik Karlsson", 65, "Ottawa Senators", RIGHT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
+        Player("Erik Karlsson", 65, "Ottawa Senators", RIGHT)
     )
 
     queryWrapper.playerQueries.insertPlayer("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT)
@@ -164,9 +165,9 @@ class IntegrationTest {
     assertThat(resultSetChanged.get()).isEqualTo(1)
 
     assertThat(allPlayers.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
-        Player.Impl("Erik Karlsson", 65, "Ottawa Senators", RIGHT),
-        Player.Impl("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
+        Player("Erik Karlsson", 65, "Ottawa Senators", RIGHT),
+        Player("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT)
     )
   }
 
@@ -181,7 +182,7 @@ class IntegrationTest {
     })
 
     assertThat(teamForCoach.executeAsList()).containsExactly(
-        Team.Impl("Anaheim Ducks", 15, null, "Randy Carlyle")
+        TeamForCoach("Anaheim Ducks", 15)
     )
 
     queryWrapper.playerQueries.insertPlayer("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT)
@@ -200,7 +201,7 @@ class IntegrationTest {
     })
 
     assertThat(playersForNumbers.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT)
     )
 
     queryWrapper.playerQueries.insertPlayer("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT)
@@ -208,8 +209,8 @@ class IntegrationTest {
     assertThat(resultSetChanged.get()).isEqualTo(1)
 
     assertThat(playersForNumbers.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
-        Player.Impl("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
+        Player("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT)
     )
   }
 
@@ -224,7 +225,7 @@ class IntegrationTest {
     })
 
     assertThat(playersForNumbers.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT)
     )
 
     queryWrapper.playerQueries.transaction {
@@ -235,9 +236,9 @@ class IntegrationTest {
     assertThat(resultSetChanged.get()).isEqualTo(1)
 
     assertThat(playersForNumbers.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
-        Player.Impl("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT),
-        Player.Impl("Corey Perry", 10, "Anaheim Ducks", RIGHT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
+        Player("Sidney Crosby", 87, "Pittsburgh Penguins", LEFT),
+        Player("Corey Perry", 10, "Anaheim Ducks", RIGHT)
     )
   }
 
@@ -252,7 +253,7 @@ class IntegrationTest {
     })
 
     assertThat(playersForTeam.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT)
     )
 
     queryWrapper.playerQueries.transaction {
@@ -262,8 +263,8 @@ class IntegrationTest {
     assertThat(resultSetChanged.get()).isEqualTo(1)
 
     assertThat(playersForTeam.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
-        Player.Impl("Erik Karlsson", 65, "Anaheim Ducks", RIGHT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
+        Player("Erik Karlsson", 65, "Anaheim Ducks", RIGHT)
     )
   }
 
@@ -278,7 +279,7 @@ class IntegrationTest {
     })
 
     assertThat(playersForTeam.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT)
     )
 
     queryWrapper.playerQueries.transaction {
@@ -289,9 +290,9 @@ class IntegrationTest {
     assertThat(resultSetChanged.get()).isEqualTo(1)
 
     assertThat(playersForTeam.executeAsList()).containsExactly(
-        Player.Impl("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
-        Player.Impl("Erik Karlsson", 65, "Anaheim Ducks", RIGHT),
-        Player.Impl("Sidney Crosby", 87, "Anaheim Ducks", LEFT)
+        Player("Ryan Getzlaf", 15, "Anaheim Ducks", RIGHT),
+        Player("Erik Karlsson", 65, "Anaheim Ducks", RIGHT),
+        Player("Sidney Crosby", 87, "Anaheim Ducks", LEFT)
     )
   }
 
@@ -305,7 +306,7 @@ class IntegrationTest {
 
   @Test fun `inner type query`() {
     assertThat(queryWrapper.teamQueries.forInnerType(ONE).executeAsList()).containsExactly(
-        Team.Impl("Ottawa Senators", 65, ONE, "Guy Boucher")
+        Team("Ottawa Senators", 65, ONE, "Guy Boucher")
     )
   }
 }

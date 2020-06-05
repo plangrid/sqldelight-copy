@@ -15,6 +15,7 @@
  */
 package com.squareup.sqldelight.core.lang.util
 
+import com.alecstrong.sql.psi.core.DialectPreset
 import com.alecstrong.sql.psi.core.psi.SqlBetweenExpr
 import com.alecstrong.sql.psi.core.psi.SqlBinaryExpr
 import com.alecstrong.sql.psi.core.psi.SqlBinaryLikeExpr
@@ -45,9 +46,10 @@ import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.INTEGER
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.NULL
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.REAL
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.TEXT
+import com.squareup.sqldelight.core.lang.SqlDelightFile
 import com.squareup.sqldelight.core.lang.psi.type
 
-internal val SqlExpr.name: String get() = when(this) {
+internal val SqlExpr.name: String get() = when (this) {
   is SqlCastExpr -> expr.name
   is SqlParenExpr -> expr?.name ?: "value"
   is SqlFunctionExpr -> functionName.text
@@ -77,7 +79,7 @@ internal val SqlExpr.name: String get() = when(this) {
  *          | literal_expr
  *          | column_expr )
  */
-internal fun SqlExpr.type(): IntermediateType = when(this) {
+internal fun SqlExpr.type(): IntermediateType = when (this) {
   is SqlRaiseExpr -> IntermediateType(NULL)
   is SqlCaseExpr -> childOfType(SqlTypes.THEN)!!.nextSiblingOfType<SqlExpr>().type()
 
@@ -134,14 +136,15 @@ internal fun SqlExpr.type(): IntermediateType = when(this) {
   else -> throw AssertionError()
 }
 
-private fun SqlFunctionExpr.functionType() = result@when (functionName.text.toLowerCase()) {
+private fun SqlFunctionExpr.functionType() = when (functionName.text.toLowerCase()) {
 
   "round" -> {
     // Single arg round function returns an int. Otherwise real.
     if (exprList.size == 1) {
-      return@result IntermediateType(INTEGER).nullableIf(exprList[0].type().javaType.isNullable)
+      IntermediateType(INTEGER).nullableIf(exprList[0].type().javaType.isNullable)
+    } else {
+      IntermediateType(REAL).nullableIf(exprList.any { it.type().javaType.isNullable })
     }
-    return@result IntermediateType(REAL).nullableIf(exprList.any { it.type().javaType.isNullable })
   }
 
   /**
@@ -155,9 +158,10 @@ private fun SqlFunctionExpr.functionType() = result@when (functionName.text.toLo
   "sum" -> {
     val type = exprList[0].type()
     if (type.sqliteType == INTEGER && !type.javaType.isNullable) {
-      return@result type.asNullable()
+      type.asNullable()
+    } else {
+      IntermediateType(REAL).asNullable()
     }
-    return@result IntermediateType(REAL).asNullable()
   }
 
   "lower", "ltrim", "printf", "replace", "rtrim", "substr", "trim", "upper", "group_concat" -> {
@@ -199,7 +203,15 @@ private fun SqlFunctionExpr.functionType() = result@when (functionName.text.toLo
   "json_valid" -> IntermediateType(INTEGER, BOOLEAN)
   "json_quote" -> exprList[0].type().asNonNullable()
 
-  else -> throw AssertionError()
+  else -> when ((containingFile as SqlDelightFile).dialect) {
+    DialectPreset.MYSQL -> mySqlFunctionType()
+    else -> throw AssertionError("Unknown function")
+  }
+}
+
+private fun SqlFunctionExpr.mySqlFunctionType() = when (functionName.text.toLowerCase()) {
+  "greatest" -> encapsulatingType(exprList, INTEGER, REAL, TEXT, BLOB)
+  else -> throw AssertionError("Unknown function for MySQL")
 }
 
 /**
@@ -210,9 +222,9 @@ private fun encapsulatingType(
   vararg typeOrder: SqliteType
 ): IntermediateType {
   val types = exprList.map { it.type() }
-  val SqlTypes = types.map { it.sqliteType }
+  val sqlTypes = types.map { it.sqliteType }
 
-  val type = typeOrder.last { it in SqlTypes }
+  val type = typeOrder.last { it in sqlTypes }
   if (types.all { it.javaType.isNullable }) {
     return IntermediateType(type).asNullable()
   }

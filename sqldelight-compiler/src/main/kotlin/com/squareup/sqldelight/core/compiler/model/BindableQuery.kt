@@ -21,7 +21,6 @@ import com.alecstrong.sql.psi.core.psi.SqlCreateTableStmt
 import com.alecstrong.sql.psi.core.psi.SqlIdentifier
 import com.alecstrong.sql.psi.core.psi.SqlInsertStmt
 import com.alecstrong.sql.psi.core.psi.SqlTypes
-import com.alecstrong.sql.psi.core.sqlite_3_18.psi.BindParameter
 import com.intellij.psi.PsiElement
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler.allocateName
 import com.squareup.sqldelight.core.lang.IntermediateType
@@ -137,11 +136,25 @@ abstract class BindableQuery(
   ) {
     val current = first(condition)
     current.bindArgs.add(bindArg)
-    if (current.type.sqliteType == NULL) {
+
+    val newArgumentType = when {
+      // If we currently have a NULL type for this argument but encounter a different type later,
+      // then the new type must be nullable.
+      // i.e. WHERE (:foo IS NULL OR data = :foo)
+      current.type.sqliteType == NULL -> bindArg.argumentType()
+      // If we'd previously assigned a type to this argument other than NULL, and later encounter NULL,
+      // we should update the existing type to be nullable.
+      // i.e. WHERE (data = :foo OR :foo IS NULL)
+      bindArg.argumentType().sqliteType == NULL && current.type.sqliteType != NULL -> current.type
+      // Nothing to update
+      else -> null
+    }
+
+    if (newArgumentType != null) {
       remove(current)
       add(current.copy(
           index = index ?: current.index,
-          type = bindArg.argumentType().run {
+          type = newArgumentType.run {
             copy(
                 javaType = javaType.copy(nullable = true),
                 name = bindArg.bindParameter.identifier?.text ?: name
@@ -152,9 +165,7 @@ abstract class BindableQuery(
   }
 
   private val SqlBindParameter.identifier: SqlIdentifier?
-    get() =
-      if (this is BindParameter) childOfType(SqlTypes.IDENTIFIER) as? SqlIdentifier
-      else null
+    get() = childOfType(SqlTypes.IDENTIFIER) as? SqlIdentifier
 
   internal fun javadocText(): String? {
     if (javadoc == null) return null
@@ -217,9 +228,8 @@ abstract class BindableQuery(
             // throw an exception here to ask the client to give a different query name which will not cause hashcode collision.
             // this should not happen often, when it happens, should be an easy fix for the client
             // to give a different query than adding logic to generate deterministic identifier
-            throw RuntimeException("HashCode collision happened when generating unique identifier for ${qualifiedQueryName}." +
+            throw RuntimeException("HashCode collision happened when generating unique identifier for $qualifiedQueryName." +
                     "Please give a different name")
-
           }
           queryIdMap[qualifiedQueryName] = queryId
           queryId

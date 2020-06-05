@@ -1,0 +1,13 @@
+CREATE TABLE dog (
+  name VARCHAR(8) NOT NULL,
+  breed VARCHAR(40) NOT NULL,
+  is_good BOOLEAN DEFAULT TRUE NOT NULL
+);
+
+insertDog:
+INSERT INTO dog
+VALUES (?, ?, ?);
+
+selectDogs:
+SELECT *
+FROM dog;

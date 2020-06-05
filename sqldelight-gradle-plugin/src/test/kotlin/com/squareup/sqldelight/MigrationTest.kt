@@ -1,9 +1,9 @@
 package com.squareup.sqldelight
 
 import com.google.common.truth.Truth.assertThat
+import java.io.File
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.Test
-import java.io.File
 
 class MigrationTest {
   @Test fun `failing migration errors properly`() {
@@ -45,6 +45,24 @@ class MigrationTest {
     )
   }
 
+  @Test fun `deriving schema from migration introduces failures in migration files`() {
+    val fixtureRoot = File("src/test/migration-schema-failure")
+
+    val output = GradleRunner.create()
+        .withProjectDir(fixtureRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "build", "--stacktrace")
+        .buildAndFail()
+
+    assertThat(output.output).contains("""
+      |1.sqm line 5:22 - No column found with name new_column
+      |5    INSERT INTO test (id, new_column)
+      |                           ^^^^^^^^^^
+      |6    VALUES ("hello", "world")
+      """.trimMargin()
+    )
+  }
+
   @Test fun `successful migration works properly`() {
     val fixtureRoot = File("src/test/migration-success")
 
@@ -52,6 +70,26 @@ class MigrationTest {
         .withProjectDir(fixtureRoot)
         .withPluginClasspath()
         .withArguments("clean", "verifyMainDatabaseMigration", "--stacktrace")
+        .build()
+
+    assertThat(output.output).contains("BUILD SUCCESSFUL")
+  }
+
+  @Test fun `multiple databases can have separate migrations`() {
+    val fixtureRoot = File("src/test/multiple-project-migration-success")
+
+    var output = GradleRunner.create()
+        .withProjectDir(fixtureRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "verifyMainDatabaseAMigration", "--stacktrace")
+        .build()
+
+    assertThat(output.output).contains("BUILD SUCCESSFUL")
+
+    output = GradleRunner.create()
+        .withProjectDir(fixtureRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "verifyMainDatabaseBMigration", "--stacktrace")
         .build()
 
     assertThat(output.output).contains("BUILD SUCCESSFUL")
@@ -79,5 +117,17 @@ class MigrationTest {
             .build()
 
     assertThat(output.output).contains("""Detected circular reference in node at path /tables[test]/indexes[test.testIndex]/columns[test."value"]/index Going deeper would cause an infinite loop, so I'll stop looking at this instance along the current path.""")
+  }
+
+  @Test fun `migrations with a gap errors properly`() {
+    val fixtureRoot = File("src/test/migration-gap-failure")
+
+    val output = GradleRunner.create()
+        .withProjectDir(fixtureRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "verifyMainDatabaseMigration", "--stacktrace")
+        .buildAndFail()
+
+    assertThat(output.output).contains("""Gap in migrations detected. Expected migration 2, got 3.""")
   }
 }

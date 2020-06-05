@@ -26,7 +26,7 @@ class JavadocTest {
       |/**
       | * Queries all values.
       | */
-      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(com.example.Test::Impl)
+      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(::com.example.Test)
       |""".trimMargin())
   }
 
@@ -51,7 +51,7 @@ class JavadocTest {
       | *
       | * @deprecated Don't use it!
       | */
-      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(com.example.Test::Impl)
+      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(::com.example.Test)
       |""".trimMargin())
   }
 
@@ -76,7 +76,7 @@ class JavadocTest {
       | *
       | * ** @deprecated Don't use it!
       | */
-      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(com.example.Test::Impl)
+      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(::com.example.Test)
       |""".trimMargin())
   }
 
@@ -93,7 +93,7 @@ class JavadocTest {
       |/**
       | * Queries all values.
       | */
-      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(com.example.Test::Impl)
+      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(::com.example.Test)
       |""".trimMargin())
   }
 
@@ -112,7 +112,7 @@ class JavadocTest {
       |/**
       | * Queries all values.
       | */
-      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(com.example.Test::Impl)
+      |override fun selectAll(): com.squareup.sqldelight.Query<com.example.Test> = selectAll(::com.example.Test)
       |""".trimMargin())
   }
 
@@ -136,7 +136,7 @@ class JavadocTest {
       |override fun insertValue(value: kotlin.String) {
       |  driver.execute(${insert.id}, ""${'"'}
       |  |INSERT INTO test(value)
-      |  |VALUES (?1)
+      |  |VALUES (?)
       |  ""${'"'}.trimMargin(), 1) {
       |    bindString(1, value)
       |  }
@@ -165,8 +165,8 @@ class JavadocTest {
       |override fun updateById(value: kotlin.String, _id: kotlin.Long) {
       |  driver.execute(${update.id}, ""${'"'}
       |  |UPDATE test
-      |  |SET value = ?1
-      |  |WHERE _id = ?2
+      |  |SET value = ?
+      |  |WHERE _id = ?
       |  ""${'"'}.trimMargin(), 2) {
       |    bindString(1, value)
       |    bindLong(2, _id)

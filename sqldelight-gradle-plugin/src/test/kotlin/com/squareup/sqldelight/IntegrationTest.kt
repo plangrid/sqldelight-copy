@@ -16,10 +16,11 @@
 package com.squareup.sqldelight
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.sqldelight.assertions.FileSubject.Companion.assertThat
+import java.io.File
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.Test
 import org.junit.experimental.categories.Category
-import java.io.File
 
 class IntegrationTest {
   @Test fun integrationTests() {
@@ -56,6 +57,73 @@ class IntegrationTest {
 
   @Test fun integrationTestsMySql() {
     val integrationRoot = File("src/test/integration-mysql")
+    val gradleRoot = File(integrationRoot, "gradle").apply {
+      mkdir()
+    }
+    File("../gradle/wrapper").copyRecursively(File(gradleRoot, "wrapper"), true)
+
+    val runner = GradleRunner.create()
+        .withProjectDir(integrationRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "check", "--stacktrace")
+
+    val result = runner.build()
+    assertThat(result.output).contains("BUILD SUCCESSFUL")
+  }
+
+  @Test fun integrationTestsMySqlSchemaDefinitions() {
+    val integrationRoot = File("src/test/integration-mysql-schema")
+    val gradleRoot = File(integrationRoot, "gradle").apply {
+      mkdir()
+    }
+    File("../gradle/wrapper").copyRecursively(File(gradleRoot, "wrapper"), true)
+
+    val runner = GradleRunner.create()
+        .withProjectDir(integrationRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "check", "--stacktrace")
+
+    val result = runner.build()
+    assertThat(result.output).contains("BUILD SUCCESSFUL")
+  }
+
+  @Test fun integrationTestsMySqlSchemaOutput() {
+    val integrationRoot = File("src/test/schema-output")
+    val gradleRoot = File(integrationRoot, "gradle").apply {
+      mkdir()
+    }
+    File("../gradle/wrapper").copyRecursively(File(gradleRoot, "wrapper"), true)
+
+    val runner = GradleRunner.create()
+        .withProjectDir(integrationRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "generateMainMyDatabaseMigrations", "--stacktrace")
+
+    val result = runner.build()
+    assertThat(result.output).contains("BUILD SUCCESSFUL")
+
+    assertThat(File(integrationRoot, "build"))
+        .contentsAreEqualTo(File(integrationRoot, "expected-build"))
+  }
+
+  @Test fun integrationTestsPostgreSql() {
+    val integrationRoot = File("src/test/integration-postgresql")
+    val gradleRoot = File(integrationRoot, "gradle").apply {
+      mkdir()
+    }
+    File("../gradle/wrapper").copyRecursively(File(gradleRoot, "wrapper"), true)
+
+    val runner = GradleRunner.create()
+        .withProjectDir(integrationRoot)
+        .withPluginClasspath()
+        .withArguments("clean", "check", "--stacktrace")
+
+    val result = runner.build()
+    assertThat(result.output).contains("BUILD SUCCESSFUL")
+  }
+
+  @Test fun integrationTestsHsql() {
+    val integrationRoot = File("src/test/integration-hsql")
     val gradleRoot = File(integrationRoot, "gradle").apply {
       mkdir()
     }

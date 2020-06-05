@@ -20,7 +20,7 @@ import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightEnvironment
 import com.squareup.sqldelight.core.SqlDelightEnvironment.CompilationStatus.Failure
 import com.squareup.sqldelight.core.SqlDelightException
-import com.squareup.sqldelight.core.SqldelightParserUtil
+import java.io.File
 import org.gradle.api.file.FileTree
 import org.gradle.api.logging.LogLevel.ERROR
 import org.gradle.api.logging.LogLevel.INFO
@@ -34,7 +34,6 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.TaskAction
-import java.io.File
 
 @CacheableTask
 open class SqlDelightTask : SourceTask() {
@@ -44,9 +43,11 @@ open class SqlDelightTask : SourceTask() {
   @get:OutputDirectory
   var outputDirectory: File? = null
 
+  // These are not marked as input because we use [getSource] instead.
   @Internal lateinit var sourceFolders: Iterable<File>
   @Internal lateinit var dependencySourceFolders: Iterable<File>
-  @Internal @Input lateinit var properties: SqlDelightDatabaseProperties
+
+  @Input lateinit var properties: SqlDelightDatabaseProperties
 
   @TaskAction
   fun generateSqlDelightFiles() {
@@ -57,7 +58,7 @@ open class SqlDelightTask : SourceTask() {
           dependencyFolders = dependencySourceFolders.filter { it.exists() },
           properties = properties,
           outputDirectory = outputDirectory,
-          moduleName = project.name.filter { it.isLetter() }
+          moduleName = project.name
       )
     }
 

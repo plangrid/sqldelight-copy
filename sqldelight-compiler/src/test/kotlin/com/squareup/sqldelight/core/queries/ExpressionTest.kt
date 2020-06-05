@@ -30,7 +30,7 @@ class ExpressionTest {
 
     val generator = SelectQueryGenerator(file.namedQueries.first())
     assertThat(generator.defaultResultTypeFunction().toString()).isEqualTo("""
-      |override fun testQuery(SecondId: kotlin.Long, value: kotlin.String): com.squareup.sqldelight.Query<com.example.Test> = testQuery(SecondId, value, com.example.Test::Impl)
+      |override fun testQuery(SecondId: kotlin.Long, value: kotlin.String): com.squareup.sqldelight.Query<com.example.Test> = testQuery(SecondId, value, ::com.example.Test)
       |""".trimMargin())
   }
 
@@ -63,7 +63,7 @@ class ExpressionTest {
 
     val query = file.namedQueries.first()
     assertThat(query.resultColumns.map { it.javaType }).containsExactly(
-       LONG, String::class.asClassName()
+      LONG, String::class.asClassName()
     ).inOrder()
   }
 
