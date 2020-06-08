@@ -13,11 +13,6 @@ intellij {
       "Groovy",
       "properties",
   ]
-  if (!project.version.endsWith("SNAPSHOT")) {
-    patchPluginXml {
-      changeNotes({ changelog.get(project.version).toHTML() })
-    }
-  }
   // Uncomment to test against Android Studio
   // intellij.alternativeIdePath = '/Applications/Android Studio.app'
 }
