@@ -33,7 +33,6 @@ import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFileSystemItem
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.testFramework.registerServiceInstance
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler
 import com.squareup.sqldelight.core.lang.MigrationFile
 import com.squareup.sqldelight.core.lang.MigrationFileType
@@ -47,7 +46,9 @@ import com.squareup.sqldelight.core.psi.SqlDelightImportStmt
 import java.io.File
 import java.util.ArrayList
 import java.util.StringTokenizer
+import kotlin.math.log10
 import kotlin.system.measureTimeMillis
+import org.picocontainer.MutablePicoContainer
 
 /**
  * Mocks an intellij environment for compiling sqldelight files without an instance of intellij
@@ -79,7 +80,7 @@ class SqlDelightEnvironment(
 
   init {
     SqlDelightFileIndex.setInstance(module, FileIndex())
-    project.registerServiceInstance(SqlDelightProjectService::class.java, this)
+    (project.picoContainer as MutablePicoContainer).registerComponentInstance(SqlDelightProjectService::class.java.name, this)
 
     with(applicationEnvironment) {
       registerFileType(MigrationFileType, MigrationFileType.defaultExtension)
@@ -196,7 +197,7 @@ class SqlDelightEnvironment(
     val result = StringBuilder()
     val tokenizer = StringTokenizer(context.text, "\n", false)
 
-    val maxDigits = (Math.log10(context.lineEnd.toDouble()) + 1).toInt()
+    val maxDigits = (log10(context.lineEnd.toDouble()) + 1).toInt()
     for (line in context.lineStart..context.lineEnd) {
       if (!tokenizer.hasMoreTokens()) break
       result.append(("%0${maxDigits}d    %s\n").format(line, tokenizer.nextToken()))
