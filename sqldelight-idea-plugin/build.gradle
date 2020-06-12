@@ -7,7 +7,7 @@ intellij {
   version "IC-${versions.idea}"
   pluginName = 'SQLDelight'
   plugins = [
-      "org.jetbrains.kotlin:${versions.ideaKotlin}-release-IJ${versions.idea}-1",
+      "org.jetbrains.kotlin:${versions.kotlin}-release-IJ2020.1-3",
       "gradle",
       "java",
       "Groovy",
@@ -16,6 +16,10 @@ intellij {
   if (!project.version.endsWith("SNAPSHOT")) {
     patchPluginXml {
       changeNotes({ changelog.get(project.version).toHTML() })
+    }
+  } else {
+    patchPluginXml {
+      version = "$VERSION_NAME-${System.currentTimeMillis()}"
     }
   }
   // Uncomment to test against Android Studio

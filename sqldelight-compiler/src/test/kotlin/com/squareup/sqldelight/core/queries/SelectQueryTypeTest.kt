@@ -112,7 +112,7 @@ class SelectQueryTypeTest {
       |  mapper: (com.squareup.sqldelight.db.SqlCursor) -> T
       |) : com.squareup.sqldelight.Query<T>(selectForId, mapper) {
       |  override fun execute(): com.squareup.sqldelight.db.SqlCursor {
-      |    val idIndexes = createArguments(count = id.size, offset = 1)
+      |    val idIndexes = createArguments(count = id.size)
       |    return driver.executeQuery(null, ""${'"'}
       |    |SELECT *
       |    |FROM data
@@ -153,7 +153,7 @@ class SelectQueryTypeTest {
       |  mapper: (com.squareup.sqldelight.db.SqlCursor) -> T
       |) : com.squareup.sqldelight.Query<T>(selectForId, mapper) {
       |  override fun execute(): com.squareup.sqldelight.db.SqlCursor {
-      |    val idIndexes = createArguments(count = id.size, offset = 1)
+      |    val idIndexes = createArguments(count = id.size)
       |    return driver.executeQuery(null, ""${'"'}
       |    |SELECT *
       |    |FROM data
@@ -398,8 +398,8 @@ class SelectQueryTypeTest {
       |  mapper: (com.squareup.sqldelight.db.SqlCursor) -> T
       |) : com.squareup.sqldelight.Query<T>(selectForId, mapper) {
       |  override fun execute(): com.squareup.sqldelight.db.SqlCursor {
-      |    val idIndexes = createArguments(count = id.size, offset = 2)
-      |    val token_Indexes = createArguments(count = token_.size, offset = id.size + 5)
+      |    val idIndexes = createArguments(count = id.size)
+      |    val token_Indexes = createArguments(count = token_.size)
       |    return driver.executeQuery(null, ""${'"'}
       |    |SELECT *
       |    |FROM data
@@ -495,7 +495,7 @@ class SelectQueryTypeTest {
       |  mapper: (com.squareup.sqldelight.db.SqlCursor) -> T
       |) : com.squareup.sqldelight.Query<T>(selectForIds, mapper) {
       |  override fun execute(): com.squareup.sqldelight.db.SqlCursor {
-      |    val idIndexes = createArguments(count = id.size, offset = 1)
+      |    val idIndexes = createArguments(count = id.size)
       |    return driver.executeQuery(null, ""${'"'}
       |    |SELECT *
       |    |FROM data
@@ -627,6 +627,40 @@ class SelectQueryTypeTest {
       |  mapper(
       |    cursor.getLong(0)!!,
       |    cursor.getLong(1)!!
+      |  )
+      |}
+      |""".trimMargin())
+  }
+
+  @Test
+  fun `proper exposure of math functions`(dialect: DialectPreset) {
+    assumeTrue(dialect in listOf(DialectPreset.MYSQL))
+    val file = FixtureCompiler.parseSql("""
+      |CREATE TABLE math (
+      |  angle INTEGER NOT NULL
+      |);
+      |
+      |selectSomeTrigValues:
+      |SELECT SIN(angle) AS sin, COS(angle) AS cos, TAN(angle) AS tan
+      |FROM math;
+      |""".trimMargin(), tempFolder, dialectPreset = dialect)
+
+    val query = file.namedQueries.first()
+    val generator = SelectQueryGenerator(query)
+
+    assertThat(generator.customResultTypeFunction().toString()).isEqualTo("""
+      |override fun <T : kotlin.Any> selectSomeTrigValues(mapper: (
+      |  sin: kotlin.Double,
+      |  cos: kotlin.Double,
+      |  tan: kotlin.Double
+      |) -> T): com.squareup.sqldelight.Query<T> = com.squareup.sqldelight.Query(${query.id}, selectSomeTrigValues, driver, "Test.sq", "selectSomeTrigValues", ""${'"'}
+      ||SELECT SIN(angle) AS sin, COS(angle) AS cos, TAN(angle) AS tan
+      ||FROM math
+      |""${'"'}.trimMargin()) { cursor ->
+      |  mapper(
+      |    cursor.getDouble(0)!!,
+      |    cursor.getDouble(1)!!,
+      |    cursor.getDouble(2)!!
       |  )
       |}
       |""".trimMargin())
