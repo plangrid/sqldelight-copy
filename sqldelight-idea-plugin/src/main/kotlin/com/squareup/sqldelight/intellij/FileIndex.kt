@@ -38,7 +38,8 @@ class FileIndex(
 
   override fun ordering(file: MigrationFile): Int? {
     if (!properties.deriveSchemaFromMigrations) return null
-    return file.virtualFile.nameWithoutExtension.filter { it in '0'..'9' }.toInt()
+    val vFile = requireNotNull(file.virtualFile) { "Null virtual file for $file" }
+    return vFile.nameWithoutExtension.filter { it in '0'..'9' }.toInt()
   }
 
   override fun packageName(file: SqlDelightFile): String {
@@ -48,7 +49,7 @@ class FileIndex(
       file
     }
     val folder = sourceFolders(original, includeDependencies = false)
-        .firstOrNull { PsiTreeUtil.findCommonParent(original, it) != null } ?: return ""
+        .firstOrNull { PsiTreeUtil.isAncestor(it, original, false) } ?: return ""
     val folderPath = folder.virtualFile.path
     val filePath = original.virtualFile!!.path
     return filePath.substring(folderPath.length + 1, filePath.indexOf(original.name) - 1).replace('/', '.')
