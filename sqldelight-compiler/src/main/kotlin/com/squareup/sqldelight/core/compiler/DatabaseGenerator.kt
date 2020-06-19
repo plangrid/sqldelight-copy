@@ -113,11 +113,9 @@ internal class DatabaseGenerator(
         .firstOrNull() ?: return
     queriesFile.tables(true)
         .toSet()
-        .forEach { query ->
-          if (query.needsAdapters()) {
-            block(query.adapterProperty())
-          }
-        }
+        .mapNotNull { if (it.needsAdapters()) it.adapterProperty() else null }
+        .sortedBy { it.name }
+        .forEach(block)
   }
 
   fun type(implementationPackage: String): TypeSpec {
@@ -164,17 +162,16 @@ internal class DatabaseGenerator(
               .build())
         }
 
-    val orderedMigrations = sourceFolders.flatMap { it.findChildrenOfType<MigrationFile>() }
-        .filter { it.order != null }
-        .sortedBy { it.order }
-
-    if (orderedMigrations.isEmpty()) {
+    if (!fileIndex.deriveSchemaFromMigrations) {
       // Derive the schema from queries files.
       sourceFolders.flatMap { it.findChildrenOfType<SqlDelightQueriesFile>() }
           .forInitializationStatements { sqlText ->
             createFunction.addStatement("$DRIVER_NAME.execute(null, %L, 0)", sqlText.toCodeLiteral())
           }
     } else {
+      val orderedMigrations = sourceFolders.flatMap { it.findChildrenOfType<MigrationFile>() }
+          .sortedBy { it.order }
+
       // Derive the schema from migration files.
       orderedMigrations.flatMap { it.sqliteStatements() }
           .filter { it.isSchema() }
