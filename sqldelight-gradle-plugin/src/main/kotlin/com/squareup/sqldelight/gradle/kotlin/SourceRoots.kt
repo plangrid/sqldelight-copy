@@ -41,12 +41,12 @@ internal fun SqlDelightDatabase.sources(): List<Source> {
   }
 
   // Android project.
-  project.extensions.findByType(BaseExtension::class.java)?.let {
-    return it.sources(project)
+  project.extensions.findByName("android")?.let {
+    return (it as BaseExtension).sources(project)
   }
 
   // Kotlin project.
-  val sourceSets = project.property("sourceSets") as SourceSetContainer
+  val sourceSets = project.extensions.getByName("sourceSets") as SourceSetContainer
   return listOf(Source(
       type = KotlinPlatformType.jvm,
       name = "main",
