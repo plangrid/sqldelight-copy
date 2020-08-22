@@ -183,7 +183,7 @@ private fun SqlFunctionExpr.functionType() = when (functionName.text.toLowerCase
   }
 
   "randomblob", "zeroblob" -> IntermediateType(BLOB)
-  "total" -> IntermediateType(REAL)
+  "total", "bm25" -> IntermediateType(REAL)
   "avg" -> IntermediateType(REAL).asNullable()
   "abs", "likelihood", "likely", "unlikely" -> exprList[0].type()
   "coalesce", "ifnull" -> encapsulatingType(exprList, INTEGER, REAL, TEXT, BLOB)
@@ -203,10 +203,11 @@ private fun SqlFunctionExpr.functionType() = when (functionName.text.toLowerCase
   "json_valid" -> IntermediateType(INTEGER, BOOLEAN)
   "json_quote" -> exprList[0].type().asNonNullable()
 
+  "highlight", "snippet" -> IntermediateType(TEXT).asNullable()
   else -> when ((containingFile as SqlDelightFile).dialect) {
     DialectPreset.MYSQL -> mySqlFunctionType()
     DialectPreset.POSTGRESQL -> postgreSqlFunctionType()
-    else -> throw AssertionError("Unknown function")
+    else -> throw IllegalArgumentException("Unknown function")
   }
 }
 
@@ -215,13 +216,13 @@ private fun SqlFunctionExpr.mySqlFunctionType() = when (functionName.text.toLowe
   "concat" -> encapsulatingType(exprList, TEXT)
   "month", "year" -> IntermediateType(INTEGER)
   "sin", "cos", "tan" -> IntermediateType(REAL)
-  else -> throw AssertionError("Unknown function for MySQL: ${functionName.text}")
+  else -> throw IllegalArgumentException("Unknown function for MySQL: ${functionName.text}")
 }
 
 private fun SqlFunctionExpr.postgreSqlFunctionType() = when (functionName.text.toLowerCase()) {
   "greatest" -> encapsulatingType(exprList, INTEGER, REAL, TEXT, BLOB)
   "concat" -> encapsulatingType(exprList, TEXT)
-  else -> throw AssertionError("Unknown function for PostgreSQL: ${functionName.text}")
+  else -> throw IllegalArgumentException("Unknown function for PostgreSQL: ${functionName.text}")
 }
 
 /**

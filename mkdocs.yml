@@ -164,8 +164,8 @@ theme:
   palette:
     primary: 'deep purple'
     accent: 'pink'
-  feature:
-    tabs: true
+  features:
+    - tabs
 
 extra_css:
   - 'css/app.css'
@@ -180,4 +180,4 @@ plugins:
 
 extra:
   versions:
-    sqldelight: '1.4.0'
+    sqldelight: '1.4.1'

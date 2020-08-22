@@ -13,7 +13,7 @@ kotlin {
       dependencies {
         api project(':runtime')
         api deps.kotlin.stdlib.common
-        api deps.kotlin.coroutines.common
+        api deps.kotlin.coroutines
       }
     }
     commonTest {
@@ -21,12 +21,12 @@ kotlin {
         implementation deps.kotlin.test.common
         implementation deps.kotlin.test.commonAnnotations
         implementation deps.stately.collections
+        implementation deps.turbine
       }
     }
     jvmMain {
       dependencies {
         api deps.kotlin.stdlib.jdk
-        api deps.kotlin.coroutines.jdk
       }
     }
     jvmTest {
@@ -38,7 +38,6 @@ kotlin {
     jsMain {
       dependencies {
         implementation deps.kotlin.stdlib.js
-        implementation deps.kotlin.coroutines.js
       }
     }
     jsTest {
@@ -48,12 +47,17 @@ kotlin {
     }
     nativeMain {
       dependencies {
-        implementation deps.kotlin.coroutines.native
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.kotlinCoroutines}-native-mt") {
+          force = true
+        }
       }
     }
     nativeTest {
       dependencies {
         implementation project(':drivers:native-driver')
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.kotlinCoroutines}-native-mt") {
+          force = true
+        }
       }
     }
   }
@@ -83,6 +87,13 @@ kotlin {
     compilations.test {
       source(sourceSets.nativeTest)
       kotlinOptions.freeCompilerArgs += ['-linker-options', '-lsqlite3']
+    }
+  }
+
+  sourceSets.matching { it.name.endsWith("Test") }.all {
+    it.languageSettings {
+      useExperimentalAnnotation('kotlin.time.ExperimentalTime')
+      useExperimentalAnnotation('kotlinx.coroutines.ExperimentalCoroutinesApi')
     }
   }
 }
