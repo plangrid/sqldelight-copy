@@ -24,7 +24,6 @@ import com.alecstrong.sql.psi.core.psi.SqlCastExpr
 import com.alecstrong.sql.psi.core.psi.SqlCollateExpr
 import com.alecstrong.sql.psi.core.psi.SqlCompoundSelectStmt
 import com.alecstrong.sql.psi.core.psi.SqlExpr
-import com.alecstrong.sql.psi.core.psi.SqlFunctionExpr
 import com.alecstrong.sql.psi.core.psi.SqlInExpr
 import com.alecstrong.sql.psi.core.psi.SqlInsertStmt
 import com.alecstrong.sql.psi.core.psi.SqlInsertStmtValues
@@ -40,6 +39,7 @@ import com.alecstrong.sql.psi.core.psi.SqlUpdateStmt
 import com.alecstrong.sql.psi.core.psi.SqlUpdateStmtLimited
 import com.alecstrong.sql.psi.core.psi.SqlUpdateStmtSubsequentSetter
 import com.alecstrong.sql.psi.core.psi.SqlValuesExpression
+import com.alecstrong.sql.psi.core.sqlite_3_24.psi.UpsertDoUpdate
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.squareup.kotlinpoet.BOOLEAN
@@ -50,6 +50,7 @@ import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.ARGUMENT
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.INTEGER
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.NULL
 import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.TEXT
+import com.squareup.sqldelight.core.lang.psi.FunctionExprMixin
 
 /**
  * Return the expected type for this expression, which is the argument type exposed in the generated
@@ -119,8 +120,8 @@ private fun SqlExpr.argumentType(argument: SqlExpr): IntermediateType {
       return IntermediateType(ARGUMENT)
     }
 
-    is SqlFunctionExpr -> {
-      return type()
+    is FunctionExprMixin -> {
+      return argumentType(argument) ?: IntermediateType(NULL)
     }
     else -> throw AssertionError()
   }
@@ -169,12 +170,11 @@ private fun SqlSelectStmt.argumentType(result: SqlResultColumn): IntermediateTyp
 }
 
 private fun SqlSetterExpression.argumentType(): IntermediateType {
-  val column = when (val parentRule = parent!!) {
-    is SqlUpdateStmt -> parentRule.columnName
-    is SqlUpdateStmtLimited -> parentRule.columnName
-    is SqlUpdateStmtSubsequentSetter -> parentRule.columnName
+  return when (val parentRule = parent!!) {
+    is SqlUpdateStmt -> parentRule.columnName!!.type()
+    is SqlUpdateStmtLimited -> parentRule.columnName!!.type()
+    is SqlUpdateStmtSubsequentSetter -> parentRule.columnName!!.type()
+    is UpsertDoUpdate -> expr.type()
     else -> throw AssertionError()
   }
-
-  return column!!.type()
 }
