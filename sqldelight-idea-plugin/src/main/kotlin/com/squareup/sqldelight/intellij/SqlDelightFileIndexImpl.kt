@@ -1,23 +1,23 @@
-package com.squareup.sqldelight.core
+package com.squareup.sqldelight.intellij
 
 import com.intellij.openapi.vfs.VirtualFile
+import com.squareup.sqldelight.core.SqlDelightDatabaseName
+import com.squareup.sqldelight.core.SqlDelightFileIndex
 import com.squareup.sqldelight.core.lang.SqlDelightFile
 
-class SqlDelightFileIndexImpl : SqlDelightFileIndex {
+internal class SqlDelightFileIndexImpl : SqlDelightFileIndex {
   override val isConfigured
     get() = false
   override val outputDirectory
     get() = throw UnsupportedOperationException()
-  override val packageName
-    get() = throw UnsupportedOperationException()
+  override val packageName = ""
   override val className
     get() = throw UnsupportedOperationException()
   override val contentRoot
     get() = throw UnsupportedOperationException()
   override val dependencies: List<SqlDelightDatabaseName>
     get() = throw UnsupportedOperationException()
-  override val deriveSchemaFromMigrations: Boolean
-    get() = throw UnsupportedOperationException()
+  override val deriveSchemaFromMigrations = false
 
   override fun packageName(file: SqlDelightFile) = throw UnsupportedOperationException()
   override fun sourceFolders(

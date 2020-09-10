@@ -17,18 +17,24 @@ package com.squareup.sqldelight.gradle
 
 import com.squareup.sqldelight.VERSION
 import com.squareup.sqldelight.core.SqlDelightPropertiesFile
+import com.squareup.sqldelight.core.SqlDelightPropertiesFileImpl
 import com.squareup.sqldelight.gradle.android.packageName
 import com.squareup.sqldelight.gradle.kotlin.linkSqlite
-import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.tooling.provider.model.ToolingModelBuilder
+import org.gradle.tooling.provider.model.ToolingModelBuilderRegistry
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.sources.DefaultKotlinSourceSet
 
-open class SqlDelightPlugin : Plugin<Project> {
+abstract class SqlDelightPlugin : Plugin<Project> {
   private val android = AtomicBoolean(false)
   private val kotlin = AtomicBoolean(false)
+
+  @get:Inject
+  abstract val registry: ToolingModelBuilderRegistry
 
   private lateinit var extension: SqlDelightExtension
 
@@ -97,6 +103,16 @@ open class SqlDelightPlugin : Plugin<Project> {
         ))
       }
 
+      project.tasks.register("generateSqlDelightInterface") {
+        it.group = GROUP
+        it.description = "Aggregation task which runs every interface generation task for every given source"
+      }
+
+      project.tasks.register("verifySqlDelightMigration") {
+        it.group = GROUP
+        it.description = "Aggregation task which runs every migration task for every given source"
+      }
+
       databases.forEach { database ->
         if (database.packageName == null && android.get() && !isMultiplatform) {
           database.packageName = project.packageName()
@@ -104,17 +120,26 @@ open class SqlDelightPlugin : Plugin<Project> {
         database.registerTasks()
       }
 
-      val ideaDir = File(project.rootDir, ".idea")
-      if (ideaDir.exists()) {
-        val propsDir =
-            File(ideaDir, "sqldelight/${project.projectDir.toRelativeString(project.rootDir)}")
-        propsDir.mkdirs()
-
-        val properties = SqlDelightPropertiesFile(
-            databases = databases.map { it.getProperties() }
-        )
-        properties.toFile(File(propsDir, SqlDelightPropertiesFile.NAME))
-      }
+      val properties = SqlDelightPropertiesFileImpl(
+          databases = databases.map { it.getProperties() }
+      )
+      registry.register(PropertiesModelBuilder(properties))
     }
+  }
+
+  class PropertiesModelBuilder(
+    private val properties: SqlDelightPropertiesFile
+  ) : ToolingModelBuilder {
+    override fun canBuild(modelName: String): Boolean {
+      return modelName == SqlDelightPropertiesFile::class.java.name
+    }
+
+    override fun buildAll(modelName: String, project: Project): Any {
+      return properties
+    }
+  }
+
+  internal companion object {
+    const val GROUP = "sqldelight"
   }
 }

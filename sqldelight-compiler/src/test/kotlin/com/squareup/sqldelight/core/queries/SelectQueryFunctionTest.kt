@@ -1,5 +1,6 @@
 package com.squareup.sqldelight.core.queries
 
+import com.alecstrong.sql.psi.core.DialectPreset
 import com.google.common.truth.Truth.assertThat
 import com.squareup.sqldelight.core.compiler.SelectQueryGenerator
 import com.squareup.sqldelight.test.util.FixtureCompiler
@@ -25,7 +26,12 @@ class SelectQueryFunctionTest {
 
     val generator = SelectQueryGenerator(file.namedQueries.first())
     assertThat(generator.defaultResultTypeFunction().toString()).isEqualTo("""
-      |override fun selectForId(id: kotlin.Long): com.squareup.sqldelight.Query<com.example.Data> = selectForId(id, ::com.example.Data)
+      |override fun selectForId(id: kotlin.Long): com.squareup.sqldelight.Query<com.example.Data> = selectForId(id) { id, value ->
+      |  com.example.Data(
+      |    id,
+      |    value
+      |  )
+      |}
       |""".trimMargin())
   }
 
@@ -60,7 +66,13 @@ class SelectQueryFunctionTest {
       |  channelId: kotlin.String,
       |  from: com.example.LocalDateTime,
       |  to: com.example.LocalDateTime
-      |): com.squareup.sqldelight.Query<com.example.Data> = selectByChannelId(channelId, from, to, ::com.example.Data)
+      |): com.squareup.sqldelight.Query<com.example.Data> = selectByChannelId(channelId, from, to) { channelId, startTime, endTime ->
+      |  com.example.Data(
+      |    channelId,
+      |    startTime,
+      |    endTime
+      |  )
+      |}
       |""".trimMargin())
   }
 
@@ -80,7 +92,12 @@ class SelectQueryFunctionTest {
 
     val generator = SelectQueryGenerator(file.namedQueries.first())
     assertThat(generator.defaultResultTypeFunction().toString()).isEqualTo("""
-      |override fun select(value: kotlin.String, id: kotlin.Long): com.squareup.sqldelight.Query<com.example.Data> = select(value, id, ::com.example.Data)
+      |override fun select(value: kotlin.String, id: kotlin.Long): com.squareup.sqldelight.Query<com.example.Data> = select(value, id) { id, value ->
+      |  com.example.Data(
+      |    id,
+      |    value
+      |  )
+      |}
       |""".trimMargin())
   }
 
@@ -265,7 +282,12 @@ class SelectQueryFunctionTest {
 
     val generator = SelectQueryGenerator(file.namedQueries.first())
     assertThat(generator.defaultResultTypeFunction().toString()).isEqualTo("""
-      |override fun someSelect(minimum: kotlin.Long, offset: kotlin.Long): com.squareup.sqldelight.Query<com.example.Data> = someSelect(minimum, offset, ::com.example.Data)
+      |override fun someSelect(minimum: kotlin.Long, offset: kotlin.Long): com.squareup.sqldelight.Query<com.example.Data> = someSelect(minimum, offset) { some_column, some_column2 ->
+      |  com.example.Data(
+      |    some_column,
+      |    some_column2
+      |  )
+      |}
       |""".trimMargin())
   }
 
@@ -498,7 +520,13 @@ class SelectQueryFunctionTest {
 
     val generator = SelectQueryGenerator(file.namedQueries.first())
     assertThat(generator.defaultResultTypeFunction().toString()).isEqualTo("""
-      |override fun selectData(): com.squareup.sqldelight.Query<com.example.SelectData> = selectData(::com.example.SelectData)
+      |override fun selectData(): com.squareup.sqldelight.Query<com.example.SelectData> = selectData { coalesce, value, value2 ->
+      |  com.example.SelectData(
+      |    coalesce,
+      |    value,
+      |    value2
+      |  )
+      |}
       |""".trimMargin())
   }
 
@@ -891,5 +919,31 @@ class SelectQueryFunctionTest {
       |}
       |
       """.trimMargin())
+  }
+
+  @Test fun `instr second parameter is a string`() {
+    val file = FixtureCompiler.parseSql("""
+      |CREATE TABLE `models` (
+      |  `model_id` int(11) NOT NULL AUTO_INCREMENT,
+      |  `model_descriptor_id` int(11) NOT NULL,
+      |  `model_description` varchar(8) NOT NULL,
+      |  PRIMARY KEY (`model_id`)
+      |) DEFAULT CHARSET=latin1;
+      |
+      |searchDescription:
+      |SELECT model_id, model_description FROM models WHERE INSTR(model_description, ?) > 0;
+      """.trimMargin(), tempFolder, dialectPreset = DialectPreset.MYSQL)
+
+    val query = file.namedQueries.first()
+    val generator = SelectQueryGenerator(query)
+
+    assertThat(generator.customResultTypeFunction().toString()).isEqualTo("""
+      |override fun <T : kotlin.Any> searchDescription(value: kotlin.String, mapper: (model_id: kotlin.Int, model_description: kotlin.String) -> T): com.squareup.sqldelight.Query<T> = SearchDescriptionQuery(value) { cursor ->
+      |  mapper(
+      |    cursor.getLong(0)!!.toInt(),
+      |    cursor.getString(1)!!
+      |  )
+      |}
+      |""".trimMargin())
   }
 }

@@ -23,7 +23,7 @@ intellij {
     }
   }
   // Uncomment to test against Android Studio
-  // intellij.alternativeIdePath = '/Applications/Android Studio.app'
+  // alternativeIdePath = '/Applications/Android Studio.app'
 }
 
 changelog {
@@ -47,12 +47,17 @@ sourceSets {
   main.java.srcDir "src/generated/kotlin"
 }
 
+repositories {
+  maven { url = uri("https://repo.gradle.org/gradle/libs-releases") }
+}
+
 dependencies {
   compile project(':sqldelight-compiler')
 
-  compile deps.kotlin.stdlib.jdk
   compile deps.kotlin.reflect
-  compile deps.bugsnag
+  compile(deps.bugsnag) {
+    exclude group: "org.slf4j"
+  }
 
   testCompile deps.truth
   testCompile project(':test-util')
