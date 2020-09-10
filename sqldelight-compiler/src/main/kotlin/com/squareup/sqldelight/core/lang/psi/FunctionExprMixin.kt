@@ -1,5 +1,6 @@
 package com.squareup.sqldelight.core.lang.psi
 
+import com.squareup.kotlinpoet.BOOLEAN
 import com.alecstrong.sql.psi.core.DialectPreset
 import com.alecstrong.sql.psi.core.SqlAnnotationHolder
 import com.alecstrong.sql.psi.core.psi.SqlExpr
