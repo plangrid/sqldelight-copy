@@ -83,7 +83,7 @@ internal class FunctionExprMixin(node: ASTNode?) : SqlFunctionExprImpl(node) {
     "json_array_length" -> IntermediateType(IntermediateType.SqliteType.INTEGER).nullableIf(exprList[0].type().javaType.isNullable)
     "json_patch" -> IntermediateType(IntermediateType.SqliteType.TEXT).nullableIf(exprList.any { it.type().javaType.isNullable })
     "json_type" -> IntermediateType(IntermediateType.SqliteType.TEXT).asNullable()
-    "json_valid" -> IntermediateType(IntermediateType.SqliteType.INTEGER, IntermediateType.SqliteType.BOOLEAN)
+    "json_valid" -> IntermediateType(IntermediateType.SqliteType.INTEGER, BOOLEAN)
     "json_quote" -> exprList[0].type().asNonNullable()
 
     "highlight", "snippet" -> IntermediateType(IntermediateType.SqliteType.TEXT).asNullable()
