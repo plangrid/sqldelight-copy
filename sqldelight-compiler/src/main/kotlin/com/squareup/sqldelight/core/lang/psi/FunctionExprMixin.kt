@@ -77,13 +77,13 @@ internal class FunctionExprMixin(node: ASTNode?) : SqlFunctionExprImpl(node) {
     // json1
 
     "json", "json_remove", "json_extract", "json_insert", "json_replace", "json_set" -> {
-      IntermediateType(TEXT).nullableIf(exprList[0].type().javaType.isNullable)
+      IntermediateType(IntermediateType.SqliteType.TEXT).nullableIf(exprList[0].type().javaType.isNullable)
     }
-    "json_array", "json_object", "json_group_array", "json_group_object" -> IntermediateType(TEXT)
-    "json_array_length" -> IntermediateType(INTEGER).nullableIf(exprList[0].type().javaType.isNullable)
-    "json_patch" -> IntermediateType(TEXT).nullableIf(exprList.any { it.type().javaType.isNullable })
-    "json_type" -> IntermediateType(TEXT).asNullable()
-    "json_valid" -> IntermediateType(INTEGER, BOOLEAN)
+    "json_array", "json_object", "json_group_array", "json_group_object" -> IntermediateType(IntermediateType.SqliteType.TEXT)
+    "json_array_length" -> IntermediateType(IntermediateType.SqliteType.INTEGER).nullableIf(exprList[0].type().javaType.isNullable)
+    "json_patch" -> IntermediateType(IntermediateType.SqliteType.TEXT).nullableIf(exprList.any { it.type().javaType.isNullable })
+    "json_type" -> IntermediateType(IntermediateType.SqliteType.TEXT).asNullable()
+    "json_valid" -> IntermediateType(IntermediateType.SqliteType.INTEGER, IntermediateType.SqliteType.BOOLEAN)
     "json_quote" -> exprList[0].type().asNonNullable()
 
     "highlight", "snippet" -> IntermediateType(IntermediateType.SqliteType.TEXT).asNullable()
