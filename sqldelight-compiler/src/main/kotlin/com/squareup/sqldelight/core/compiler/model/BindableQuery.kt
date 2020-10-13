@@ -23,10 +23,11 @@ import com.alecstrong.sql.psi.core.psi.SqlInsertStmt
 import com.alecstrong.sql.psi.core.psi.SqlTypes
 import com.intellij.psi.PsiElement
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler.allocateName
+import com.squareup.sqldelight.core.dialect.sqlite.SqliteType.ARGUMENT
+import com.squareup.sqldelight.core.dialect.sqlite.SqliteType.NULL
 import com.squareup.sqldelight.core.lang.IntermediateType
-import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.ARGUMENT
-import com.squareup.sqldelight.core.lang.IntermediateType.SqliteType.NULL
 import com.squareup.sqldelight.core.lang.acceptsTableInterface
+import com.squareup.sqldelight.core.lang.psi.ColumnTypeMixin
 import com.squareup.sqldelight.core.lang.util.argumentType
 import com.squareup.sqldelight.core.lang.util.childOfType
 import com.squareup.sqldelight.core.lang.util.columns
@@ -64,7 +65,7 @@ abstract class BindableQuery(
   internal val arguments: List<Argument> by lazy {
     if (statement is SqlInsertStmt && statement.acceptsTableInterface()) {
       return@lazy statement.columns.mapIndexed { index, column ->
-        Argument(index + 1, column.type().let {
+        Argument(index + 1, (column.columnType as ColumnTypeMixin).type().let {
           it.copy(
               name = "${statement.tableName.name}.${it.name}",
               extracted = true
@@ -118,9 +119,9 @@ abstract class BindableQuery(
       return@lazy result.map {
         val isPrimaryKey = it.type.column?.columnConstraintList
             ?.any { it.node?.findChildByType(SqlTypes.PRIMARY) != null } == true
-        if (isPrimaryKey && it.type.column?.typeName?.text == "INTEGER") {
+        if (isPrimaryKey && it.type.column?.columnType?.typeName?.text == "INTEGER") {
           // INTEGER Primary keys can be inserted as null to be auto-assigned a primary key.
-          return@map it.copy(type = it.type.copy(javaType = it.type.javaType.copy(nullable = true)))
+          return@map it.copy(type = it.type.asNullable())
         }
         return@map it
       }
@@ -141,11 +142,11 @@ abstract class BindableQuery(
       // If we currently have a NULL type for this argument but encounter a different type later,
       // then the new type must be nullable.
       // i.e. WHERE (:foo IS NULL OR data = :foo)
-      current.type.sqliteType == NULL -> bindArg.argumentType()
+      current.type.dialectType == NULL -> bindArg.argumentType()
       // If we'd previously assigned a type to this argument other than NULL, and later encounter NULL,
       // we should update the existing type to be nullable.
       // i.e. WHERE (data = :foo OR :foo IS NULL)
-      bindArg.argumentType().sqliteType == NULL && current.type.sqliteType != NULL -> current.type
+      bindArg.argumentType().dialectType == NULL && current.type.dialectType != NULL -> current.type
       // Nothing to update
       else -> null
     }

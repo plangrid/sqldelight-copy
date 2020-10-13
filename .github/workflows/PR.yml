@@ -38,21 +38,27 @@ jobs:
 
       - name: Run ubuntu tests
         if: matrix.os == 'ubuntu-latest' && matrix.job == 'test'
-        run: ./gradlew build -x :sqldelight-idea-plugin:build --stacktrace
+        run: |
+          ./gradlew build -x :sqldelight-idea-plugin:build -x :sqldelight-gradle-plugin:test --stacktrace
+          ./gradlew :sqldelight-gradle-plugin:test --tests="com.squareup.sqldelight.tests.*"
+          ./gradlew :sqldelight-gradle-plugin:test --tests="com.squareup.sqldelight.integrations.*"
 
       - name: Run the IntelliJ plugin
         if: matrix.os == 'ubuntu-latest' && matrix.job == 'instrumentation'
         run: ./gradlew :sqldelight-idea-plugin:build --stacktrace
       - name: Verify intellij plugin
         if: matrix.os == 'ubuntu-latest' && matrix.job == 'instrumentation'
-        uses: thepieterdc/intellij-plugin-verifier-action@v1.1.2
+        uses: ChrisCarini/intellij-platform-plugin-verifier-action@v1.0.3
         with:
-          plugin: 'sqldelight-idea-plugin/build/distributions/SQLDelight*'
-          versions: |
-            2019.1.4
-            2019.2.4
-            2019.3.5
-            2020.1.2
+          ide-versions: |
+            ideaIC:2019.1.4
+            ideaIU:2019.1.4
+            ideaIC:2019.2.4
+            ideaIU:2019.2.4
+            ideaIC:2019.3.5
+            ideaIU:2019.3.5
+            ideaIC:2020.1.2
+            ideaIU:2020.1.2
 
       - name: Run windows tests
         if: matrix.os == 'windows-latest'
@@ -79,4 +85,4 @@ jobs:
           path: build-reports.zip
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.configureondemand=true -Dkotlin.incremental=false -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxPermSize=2048m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+  GRADLE_OPTS: -Dorg.gradle.configureondemand=true -Dkotlin.incremental=false -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxPermSize=2048m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512m"
