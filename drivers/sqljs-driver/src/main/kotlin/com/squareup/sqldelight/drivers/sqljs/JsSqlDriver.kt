@@ -99,21 +99,21 @@ private class JsSqlPreparedStatement : SqlPreparedStatement {
 
     val parameters = mutableListOf<Any?>()
 
-    override fun bindBytes(index: Int, value: ByteArray?) {
-        parameters.add(value?.toTypedArray())
+    override fun bindBytes(index: Int, bytes: ByteArray?) {
+        parameters.add(bytes?.toTypedArray())
     }
 
-    override fun bindLong(index: Int, value: Long?) {
+    override fun bindLong(index: Int, long: Long?) {
         // We convert Long to Double because Kotlin's Double is mapped to JS number
         // whereas Kotlin's Long is implemented as a JS object
-        parameters.add(value?.toDouble())
+        parameters.add(long?.toDouble())
     }
 
-    override fun bindDouble(index: Int, value: Double?) {
-        parameters.add(value)
+    override fun bindDouble(index: Int, double: Double?) {
+        parameters.add(double)
     }
 
-    override fun bindString(index: Int, value: String?) {
-        parameters.add(value)
+    override fun bindString(index: Int, string: String?) {
+        parameters.add(string)
     }
 }

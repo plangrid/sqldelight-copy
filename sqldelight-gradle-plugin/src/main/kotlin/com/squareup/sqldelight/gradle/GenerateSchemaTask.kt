@@ -28,6 +28,7 @@ import org.gradle.workers.WorkAction
 import org.gradle.workers.WorkParameters
 import org.gradle.workers.WorkerExecutor
 
+@Suppress("UnstableApiUsage") // Worker API
 @CacheableTask
 abstract class GenerateSchemaTask : SourceTask() {
   @Suppress("unused") // Required to invalidate the task on version updates.
@@ -42,13 +43,16 @@ abstract class GenerateSchemaTask : SourceTask() {
   @Internal lateinit var sourceFolders: Iterable<File>
   @Input lateinit var properties: SqlDelightDatabaseProperties
 
+  @Input var verifyMigrations: Boolean = false
+
   @TaskAction
   fun generateSchemaFile() {
-    workerExecutor.noIsolation().submit(GenerateSchema::class.java) {
+    workerExecutor.classLoaderIsolation().submit(GenerateSchema::class.java) {
       it.sourceFolders.set(sourceFolders.filter(File::exists))
       it.outputDirectory.set(outputDirectory)
       it.moduleName.set(project.name)
       it.properties.set(properties)
+      it.verifyMigrations.set(verifyMigrations)
     }
   }
 
@@ -64,6 +68,7 @@ abstract class GenerateSchemaTask : SourceTask() {
     val outputDirectory: DirectoryProperty
     val moduleName: Property<String>
     val properties: Property<SqlDelightDatabaseProperties>
+    val verifyMigrations: Property<Boolean>
   }
 
   abstract class GenerateSchema : WorkAction<GenerateSchemaWorkParameters> {
@@ -72,7 +77,8 @@ abstract class GenerateSchemaTask : SourceTask() {
           sourceFolders = parameters.sourceFolders.get(),
           dependencyFolders = emptyList(),
           moduleName = parameters.moduleName.get(),
-          properties = parameters.properties.get()
+          properties = parameters.properties.get(),
+          verifyMigrations = parameters.verifyMigrations.get()
       )
 
       var maxVersion = 1
@@ -86,7 +92,9 @@ abstract class GenerateSchemaTask : SourceTask() {
       }
       createConnection("$outputDirectory/$maxVersion.db").use { connection ->
         val sourceFiles = ArrayList<SqlDelightQueriesFile>()
-        environment.forSourceFiles { file -> sourceFiles.add(file as SqlDelightQueriesFile) }
+        environment.forSourceFiles { file ->
+          if (file is SqlDelightQueriesFile) sourceFiles.add(file)
+        }
         sourceFiles.forInitializationStatements { sqlText ->
           connection.prepareStatement(sqlText).execute()
         }

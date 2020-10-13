@@ -50,10 +50,7 @@ class SqlDelightFileViewProviderFactory : FileViewProviderFactory {
     eventSystemEnabled: Boolean
   ): FileViewProvider {
     val module = SqlDelightProjectService.getInstance(manager.project).module(file)
-    if (module == null || !SqlDelightFileIndex.getInstance(module).isConfigured ||
-        SqlDelightFileIndex.getInstance(module).sourceFolders(file).isEmpty()) {
-      return SingleRootFileViewProvider(manager, file, eventSystemEnabled)
-    }
+        ?: return SingleRootFileViewProvider(manager, file, eventSystemEnabled)
     return SqlDelightFileViewProvider(manager, file, eventSystemEnabled, language, module)
   }
 }
@@ -80,6 +77,11 @@ private class SqlDelightFileViewProvider(
 
   override fun contentsSynchronized() {
     super.contentsSynchronized()
+
+    if (!SqlDelightFileIndex.getInstance(module).isConfigured ||
+        SqlDelightFileIndex.getInstance(module).sourceFolders(file).isEmpty()) {
+      return
+    }
 
     condition.invalidated.set(true)
 
@@ -110,7 +112,7 @@ private class SqlDelightFileViewProvider(
     }
 
     // File is mutable so create a copy that wont be mutated.
-    val file = file.copyWithSymbols() as SqlDelightFile
+    val file = file.copy() as SqlDelightFile
 
     shouldGenerate = PsiTreeUtil.processElements(file) { element ->
       when (element) {
