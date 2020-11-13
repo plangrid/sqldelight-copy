@@ -75,6 +75,21 @@ class MigrationTest {
     assertThat(output.output).contains("BUILD SUCCESSFUL")
   }
 
+  @Test fun `successful migration works properly without classloader isolation`() {
+    val fixtureRoot = File("src/test/migration-success-noisolation")
+    val gradleRoot = File(fixtureRoot, "gradle").apply {
+      mkdir()
+    }
+    File("../gradle/wrapper").copyRecursively(File(gradleRoot, "wrapper"), true)
+
+    val output = GradleRunner.create()
+            .withProjectDir(fixtureRoot)
+            .withArguments("clean", "check", "verifyMainDatabaseMigration", "--stacktrace")
+            .build()
+
+    assertThat(output.output).contains("BUILD SUCCESSFUL")
+  }
+
   @Test fun `multiple databases can have separate migrations`() {
     val fixtureRoot = File("src/test/multiple-project-migration-success")
     val gradleRoot = File(fixtureRoot, "gradle").apply {
@@ -168,13 +183,13 @@ class MigrationTest {
       |private class DatabaseImpl(
       |  driver: SqlDriver
       |) : TransacterImpl(driver), Database {
-      |  override val testQueries: TestQueriesImpl = TestQueriesImpl(this, driver)
+      |  public override val testQueries: TestQueriesImpl = TestQueriesImpl(this, driver)
       |
-      |  object Schema : SqlDriver.Schema {
-      |    override val version: Int
+      |  public object Schema : SqlDriver.Schema {
+      |    public override val version: Int
       |      get() = 2
       |
-      |    override fun create(driver: SqlDriver) {
+      |    public override fun create(driver: SqlDriver): Unit {
       |      driver.execute(null, ""${'"'}
       |          |CREATE TABLE test (
       |          |  value TEXT NOT NULL,
@@ -196,11 +211,11 @@ class MigrationTest {
       |          ""${'"'}.trimMargin(), 0)
       |    }
       |
-      |    override fun migrate(
+      |    public override fun migrate(
       |      driver: SqlDriver,
       |      oldVersion: Int,
       |      newVersion: Int
-      |    ) {
+      |    ): Unit {
       |      if (oldVersion <= 1 && newVersion > 1) {
       |        driver.execute(null, "ALTER TABLE test ADD COLUMN value2 TEXT", 0)
       |        driver.execute(null, "CREATE INDEX testIndex ON test(value)", 0)
