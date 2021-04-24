@@ -1,11 +1,9 @@
 package com.squareup.sqldelight.core.compiler.integration
 
 import com.alecstrong.sql.psi.core.psi.LazyQuery
-import com.alecstrong.sql.psi.core.psi.SqlAlterTableStmt
 import com.alecstrong.sql.psi.core.psi.SqlColumnDef
 import com.alecstrong.sql.psi.core.psi.SqlCreateTableStmt
 import com.alecstrong.sql.psi.core.psi.SqlCreateViewStmt
-import com.alecstrong.sql.psi.core.psi.SqlCreateVirtualTableStmt
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.PropertySpec
@@ -21,19 +19,18 @@ internal fun LazyQuery.needsAdapters() = when (tableName.parent) {
 
 internal fun LazyQuery.adapterProperty(): PropertySpec {
   val adapterType = ClassName(
-      (tableName.containingFile as SqlDelightFile).packageName!!,
-      SqlDelightCompiler.allocateName(tableName).capitalize(),
-      ADAPTER_NAME
+    (tableName.containingFile as SqlDelightFile).packageName!!,
+    SqlDelightCompiler.allocateName(tableName).capitalize(),
+    ADAPTER_NAME
   )
   return PropertySpec.builder(adapterName, adapterType, KModifier.INTERNAL)
-      .initializer(adapterName)
-      .build()
+    .initializer(adapterName)
+    .build()
 }
 
 private fun LazyQuery.columns() = when (val parentRule = tableName.parent) {
   is SqlCreateTableStmt -> parentRule.columnDefList
-  is SqlAlterTableStmt, is SqlCreateVirtualTableStmt -> query.columns.map { it.element.parent as SqlColumnDef }
-  else -> throw IllegalStateException("Unexpected query parent $parentRule")
+  else -> query.columns.map { it.element.parent as SqlColumnDef }
 }
 
 internal val LazyQuery.adapterName

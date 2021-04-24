@@ -15,9 +15,12 @@
  */
 package com.squareup.sqldelight.core.lang.util
 
+import com.alecstrong.sql.psi.core.mysql.psi.MySqlExtensionExpr
 import com.alecstrong.sql.psi.core.psi.SqlBetweenExpr
+import com.alecstrong.sql.psi.core.psi.SqlBinaryAddExpr
 import com.alecstrong.sql.psi.core.psi.SqlBinaryExpr
 import com.alecstrong.sql.psi.core.psi.SqlBinaryLikeExpr
+import com.alecstrong.sql.psi.core.psi.SqlBinaryMultExpr
 import com.alecstrong.sql.psi.core.psi.SqlBindExpr
 import com.alecstrong.sql.psi.core.psi.SqlCaseExpr
 import com.alecstrong.sql.psi.core.psi.SqlCastExpr
@@ -30,6 +33,7 @@ import com.alecstrong.sql.psi.core.psi.SqlInExpr
 import com.alecstrong.sql.psi.core.psi.SqlIsExpr
 import com.alecstrong.sql.psi.core.psi.SqlLiteralExpr
 import com.alecstrong.sql.psi.core.psi.SqlNullExpr
+import com.alecstrong.sql.psi.core.psi.SqlOtherExpr
 import com.alecstrong.sql.psi.core.psi.SqlParenExpr
 import com.alecstrong.sql.psi.core.psi.SqlRaiseExpr
 import com.alecstrong.sql.psi.core.psi.SqlTypes
@@ -37,6 +41,7 @@ import com.alecstrong.sql.psi.core.psi.SqlUnaryExpr
 import com.intellij.psi.tree.TokenSet
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.sqldelight.core.compiler.SqlDelightCompiler.allocateName
+import com.squareup.sqldelight.core.dialect.mysql.type
 import com.squareup.sqldelight.core.dialect.sqlite.SqliteType
 import com.squareup.sqldelight.core.dialect.sqlite.SqliteType.ARGUMENT
 import com.squareup.sqldelight.core.dialect.sqlite.SqliteType.BLOB
@@ -102,12 +107,21 @@ internal fun SqlExpr.type(): IntermediateType = when (this) {
   is FunctionExprMixin -> functionType() ?: IntermediateType(NULL)
 
   is SqlBinaryExpr -> {
-    if (childOfType(TokenSet.create(SqlTypes.EQ, SqlTypes.EQ2, SqlTypes.NEQ,
-        SqlTypes.NEQ2, SqlTypes.AND, SqlTypes.OR, SqlTypes.GT, SqlTypes.GTE,
-        SqlTypes.LT, SqlTypes.LTE)) != null) {
+    if (childOfType(
+        TokenSet.create(
+            SqlTypes.EQ, SqlTypes.EQ2, SqlTypes.NEQ,
+            SqlTypes.NEQ2, SqlTypes.AND, SqlTypes.OR, SqlTypes.GT, SqlTypes.GTE,
+            SqlTypes.LT, SqlTypes.LTE
+          )
+      ) != null
+    ) {
       IntermediateType(INTEGER, BOOLEAN)
     } else {
-      encapsulatingType(getExprList(), INTEGER, REAL, TEXT, BLOB)
+      encapsulatingType(
+        exprList = getExprList(),
+        nullableIfAny = (this is SqlBinaryAddExpr || this is SqlBinaryMultExpr),
+        INTEGER, REAL, TEXT, BLOB
+      )
     }
   }
 
@@ -125,13 +139,25 @@ internal fun SqlExpr.type(): IntermediateType = when (this) {
         IntermediateType(INTEGER)
       }
     }
-    (literalValue.childOfType(TokenSet.create(SqlTypes.CURRENT_TIMESTAMP,
-        SqlTypes.CURRENT_TIME, SqlTypes.CURRENT_DATE)) != null) -> IntermediateType(TEXT)
+    (
+      literalValue.childOfType(
+        TokenSet.create(
+          SqlTypes.CURRENT_TIMESTAMP,
+          SqlTypes.CURRENT_TIME, SqlTypes.CURRENT_DATE
+        )
+      ) != null
+      ) -> IntermediateType(TEXT)
     (literalValue.childOfType(SqlTypes.NULL) != null) -> IntermediateType(NULL)
     else -> IntermediateType(BLOB).asNullable()
   }
 
   is SqlColumnExpr -> columnName.type()
+
+  is SqlOtherExpr -> {
+    extensionExpr.type()
+  }
+
+  is MySqlExtensionExpr -> type()
   else -> throw IllegalStateException("Unknown expression type $this")
 }
 
@@ -141,12 +167,23 @@ internal fun SqlExpr.type(): IntermediateType = when (this) {
 internal fun encapsulatingType(
   exprList: List<SqlExpr>,
   vararg typeOrder: SqliteType
+) = encapsulatingType(exprList = exprList, nullableIfAny = false, typeOrder = typeOrder)
+
+/**
+ * @return the type from the expr list which is the highest order in the typeOrder list
+ */
+internal fun encapsulatingType(
+  exprList: List<SqlExpr>,
+  nullableIfAny: Boolean,
+  vararg typeOrder: SqliteType
 ): IntermediateType {
   val types = exprList.map { it.type() }
   val sqlTypes = types.map { it.dialectType }
 
   val type = typeOrder.last { it in sqlTypes }
-  if (types.all { it.javaType.isNullable }) {
+  if (!nullableIfAny && types.all { it.javaType.isNullable } ||
+    nullableIfAny && types.any { it.javaType.isNullable }
+  ) {
     return IntermediateType(type).asNullable()
   }
   return IntermediateType(type)
