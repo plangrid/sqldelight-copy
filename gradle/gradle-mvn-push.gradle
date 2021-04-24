@@ -7,6 +7,18 @@ tasks.named("dokkaGfm").configure {
 
 mavenPublish {
   releaseSigningEnabled = !getGpgKey().isEmpty()
+
+  targets {
+    installLocally {
+      releaseRepositoryUrl = file("${rootProject.buildDir}/localMaven").toURI().toString()
+      snapshotRepositoryUrl = file("${rootProject.buildDir}/localMaven").toURI().toString()
+    }
+    uploadArchives {
+      releaseRepositoryUrl = System.getenv("ARTIFACTORY_PUBLISH_URL")
+      repositoryUsername = System.getenv("ARTIFACTORY_USER")
+      repositoryPassword = System.getenv("ARTIFACTORY_PASSWORD")
+    }
+  }
 }
 
 publishing {
@@ -23,6 +35,7 @@ def getGpgKey() {
 }
 
 signing {
+  required { false }
   def signingKey = getGpgKey()
   if (!signingKey.isEmpty()) {
     useInMemoryPgpKeys(signingKey, "")
