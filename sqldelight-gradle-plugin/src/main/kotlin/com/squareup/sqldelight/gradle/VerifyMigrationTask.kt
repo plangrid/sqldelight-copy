@@ -1,6 +1,7 @@
 package com.squareup.sqldelight.gradle
 
 import com.squareup.sqldelight.VERSION
+import com.squareup.sqldelight.core.SqlDelightCompilationUnit
 import com.squareup.sqldelight.core.SqlDelightDatabaseProperties
 import com.squareup.sqldelight.core.SqlDelightEnvironment
 import com.squareup.sqldelight.core.lang.SqlDelightQueriesFile
@@ -9,53 +10,52 @@ import com.squareup.sqldelight.core.lang.util.rawSqlText
 import com.squareup.sqlite.migrations.CatalogDatabase
 import com.squareup.sqlite.migrations.DatabaseFilesCollector
 import com.squareup.sqlite.migrations.ObjectDifferDatabaseComparator
-import java.io.File
-import javax.inject.Inject
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileTree
 import org.gradle.api.logging.Logging
-import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SkipWhenEmpty
-import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.TaskAction
 import org.gradle.workers.WorkAction
 import org.gradle.workers.WorkParameters
 import org.gradle.workers.WorkerExecutor
+import java.io.File
+import javax.inject.Inject
 
 @Suppress("UnstableApiUsage") // Worker API
 @CacheableTask
-abstract class VerifyMigrationTask : SourceTask(), SqlDelightWorkerTask {
+abstract class VerifyMigrationTask : SqlDelightWorkerTask() {
   @Suppress("unused") // Required to invalidate the task on version updates.
   @Input val pluginVersion = VERSION
 
   @get:Inject
   abstract override val workerExecutor: WorkerExecutor
 
+  @Input val projectName: Property<String> = project.objects.property(String::class.java)
+
   /** Directory where the database files are copied for the migration scripts to run against. */
   @Internal lateinit var workingDirectory: File
 
-  @Internal lateinit var sourceFolders: Iterable<File>
-  @Input lateinit var properties: SqlDelightDatabaseProperties
+  @Nested lateinit var properties: SqlDelightDatabasePropertiesImpl
+  @Nested lateinit var compilationUnit: SqlDelightCompilationUnitImpl
 
   @Input var verifyMigrations: Boolean = false
-
-  @Input override var useClassLoaderIsolation = true
 
   @TaskAction
   fun verifyMigrations() {
     workQueue().submit(VerifyMigrationAction::class.java) {
       it.workingDirectory.set(workingDirectory)
-      it.projectName.set(project.name)
-      it.sourceFolders.set(sourceFolders.filter(File::exists))
+      it.projectName.set(projectName)
       it.properties.set(properties)
       it.verifyMigrations.set(verifyMigrations)
+      it.compilationUnit.set(compilationUnit)
     }
   }
 
@@ -67,23 +67,27 @@ abstract class VerifyMigrationTask : SourceTask(), SqlDelightWorkerTask {
   }
 
   interface VerifyMigrationWorkParameters : WorkParameters {
-    val sourceFolders: ListProperty<File>
     val workingDirectory: DirectoryProperty
     val projectName: Property<String>
     val properties: Property<SqlDelightDatabaseProperties>
+    val compilationUnit: Property<SqlDelightCompilationUnit>
     val verifyMigrations: Property<Boolean>
   }
 
   abstract class VerifyMigrationAction : WorkAction<VerifyMigrationWorkParameters> {
     private val logger = Logging.getLogger(VerifyMigrationTask::class.java)
 
+    private val sourceFolders: List<File>
+      get() = parameters.compilationUnit.get().sourceFolders.map { it.folder }
+
     private val environment by lazy {
       SqlDelightEnvironment(
-          sourceFolders = parameters.sourceFolders.get().filter { it.exists() },
-          dependencyFolders = emptyList(),
-          moduleName = parameters.projectName.get(),
-          properties = parameters.properties.get(),
-          verifyMigrations = parameters.verifyMigrations.get()
+        sourceFolders = sourceFolders.filter { it.exists() },
+        dependencyFolders = emptyList(),
+        moduleName = parameters.projectName.get(),
+        properties = parameters.properties.get(),
+        verifyMigrations = parameters.verifyMigrations.get(),
+        compilationUnit = parameters.compilationUnit.get(),
       )
     }
 
@@ -91,7 +95,7 @@ abstract class VerifyMigrationTask : SourceTask(), SqlDelightWorkerTask {
       parameters.workingDirectory.get().asFile.deleteRecursively()
 
       val catalog = createCurrentDb()
-      DatabaseFilesCollector.forDatabaseFiles(parameters.sourceFolders.get()) {
+      DatabaseFilesCollector.forDatabaseFiles(sourceFolders) {
         checkMigration(it, catalog)
       }
 
@@ -112,8 +116,10 @@ abstract class VerifyMigrationTask : SourceTask(), SqlDelightWorkerTask {
 
     private fun checkMigration(dbFile: File, currentDb: CatalogDatabase) {
       val actualCatalog = createActualDb(dbFile)
-      val databaseComparator = ObjectDifferDatabaseComparator(circularReferenceExceptionLogger = {
-        logger.debug(it) }
+      val databaseComparator = ObjectDifferDatabaseComparator(
+        circularReferenceExceptionLogger = {
+          logger.debug(it)
+        }
       )
       val diffReport = databaseComparator.compare(currentDb, actualCatalog).let { diff ->
         buildString(diff::printTo)
@@ -121,7 +127,7 @@ abstract class VerifyMigrationTask : SourceTask(), SqlDelightWorkerTask {
 
       check(diffReport.isEmpty()) {
         "Error migrating from ${dbFile.name}, fresh database looks" +
-            " different from migration database:\n$diffReport"
+          " different from migration database:\n$diffReport"
       }
     }
 
