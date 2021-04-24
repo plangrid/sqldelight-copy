@@ -41,3 +41,7 @@ signing {
     useInMemoryPgpKeys(signingKey, "")
   }
 }
+
+tasks.register("publishMingwPublicationToMavenRepository") {
+    dependsOn "publishMingwX64PublicationToMavenRepository"
+}
