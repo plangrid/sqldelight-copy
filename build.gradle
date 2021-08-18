@@ -80,5 +80,6 @@ allprojects {
   }
 
   group = GROUP
-  version = VERSION_NAME
+  version = "${VERSION_NAME}.${System.getenv('PG_BUILD_NUMBER')}"
+  setProperty("VERSION_NAME", version)
 }
