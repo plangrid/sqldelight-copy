@@ -79,8 +79,8 @@ class SqlDelightCopyPasteProcessor : CopyPastePostProcessor<ReferenceTransferabl
   override fun extractTransferableData(content: Transferable): List<ReferenceTransferableData> {
     try {
       val dataFlavor = ReferenceData.getDataFlavor() ?: return emptyList()
-      val referenceData = content.getTransferData(dataFlavor) as ReferenceTransferableData
-      return listOf(referenceData)
+      val referenceData = content.getTransferData(dataFlavor) as ReferenceTransferableData?
+      return listOfNotNull(referenceData)
     } catch (ignored: UnsupportedFlavorException) {
     } catch (ignored: IOException) {
     }
@@ -99,6 +99,11 @@ class SqlDelightCopyPasteProcessor : CopyPastePostProcessor<ReferenceTransferabl
       return
     }
 
+    val references = values.first().data
+    if (references.isNullOrEmpty()) {
+      return
+    }
+
     val document = editor.document
     val documentManager = PsiDocumentManager.getInstance(project)
     val file = documentManager.getPsiFile(document)
@@ -108,14 +113,14 @@ class SqlDelightCopyPasteProcessor : CopyPastePostProcessor<ReferenceTransferabl
     val elementAtCaret = file.findElementAt(caretOffset)
     val insideCreateTableStmt = elementAtCaret?.parentOfType<SqlCreateTableStmt>() != null
     val hasCreateTableSibling = elementAtCaret?.parentOfType<SqlStmt>() != null &&
-      PsiTreeUtil.findSiblingBackward(elementAtCaret, SqlTypes.CREATE_TABLE_STMT, false, null) != null
+      findCreateTableSiblingCatching(elementAtCaret) != null
     if (!insideCreateTableStmt && !hasCreateTableSibling) {
       return
     }
     documentManager.commitAllDocuments()
 
     WriteCommandAction.writeCommandAction(project).run<ReadOnlyModificationException> {
-      val qClassNames = values.first().data.map(ReferenceData::qClassName)
+      val qClassNames = references.map(ReferenceData::qClassName)
       val importStmtList = file.findChildOfType<SqlDelightImportStmtList>()?.importStmtList.orEmpty()
       val oldImports = importStmtList.map { it.javaType.text }
       val newImports = (qClassNames + oldImports).distinct()
@@ -128,5 +133,11 @@ class SqlDelightCopyPasteProcessor : CopyPastePostProcessor<ReferenceTransferabl
         document.replaceString(0, endOffset, newImports)
       }
     }
+  }
+
+  private fun findCreateTableSiblingCatching(elementAtCaret: PsiElement?): PsiElement? {
+    return elementAtCaret?.runCatching {
+      PsiTreeUtil.findSiblingBackward(this, SqlTypes.CREATE_TABLE_STMT, false, null)
+    }?.getOrNull()
   }
 }

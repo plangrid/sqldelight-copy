@@ -3,7 +3,7 @@
   <name>SQLDelight</name>
   <category>Custom Languages</category>
   <vendor url="https://github.com/square">Square, Inc.</vendor>
-  <idea-version since-build="201"/>
+  <idea-version since-build="202"/>
   <depends>com.intellij.modules.lang</depends>
   <depends>com.intellij.java</depends>
   <depends>org.jetbrains.kotlin</depends>
@@ -34,6 +34,8 @@
     <fileType.fileViewProviderFactory
         filetype="SqlDelight Database"
         implementationClass="com.squareup.sqldelight.core.lang.DatabaseFileViewProviderFactory"/>
+
+    <colorSettingsPage implementation="com.squareup.sqldelight.intellij.SqlDelightColorSettingsPage"/>
 
     <internalFileTemplate name="SqlDelight File"/>
     <internalFileTemplate name="SqlDelight Table"/>
@@ -88,9 +90,12 @@
         implementationClass="com.squareup.sqldelight.intellij.lang.SqlDelightImportOptimizer"/>
     <lang.importOptimizer language="SqlDelightMigration"
         implementationClass="com.squareup.sqldelight.intellij.lang.SqlDelightImportOptimizer"/>
+    <lang.inspectionSuppressor language="SqlDelight"
+        implementationClass="com.squareup.sqldelight.intellij.inspections.suppression.SqlDelightInspectionSuppressor"/>
 
     <projectService serviceInterface="com.squareup.sqldelight.core.SqlDelightProjectService"
         serviceImplementation="com.squareup.sqldelight.intellij.ProjectService"/>
+    <highlightVisitor implementation="com.squareup.sqldelight.intellij.lang.SqlDelightHighlightVisitor"/>
 
     <!-- Migration Extensions -->
     <lang.syntaxHighlighterFactory language="SqlDelightMigration"
@@ -104,6 +109,14 @@
 
     <intentionAction>
       <className>com.squareup.sqldelight.intellij.intentions.ExpandColumnNamesWildcardQuickFix</className>
+      <category>SQLDelight</category>
+    </intentionAction>
+    <intentionAction>
+      <className>com.squareup.sqldelight.intellij.intentions.IntroduceTableAliasIntention</className>
+      <category>SQLDelight</category>
+    </intentionAction>
+    <intentionAction>
+      <className>com.squareup.sqldelight.intellij.intentions.QualifyColumnNameIntention</className>
       <category>SQLDelight</category>
     </intentionAction>
 
@@ -144,8 +157,27 @@
         displayName="Incorrect join column inspection"
         groupName="Declaration redundancy"/>
 
+    <localInspection
+        enabledByDefault="true"
+        language="SqlDelight"
+        level="WARNING"
+        implementationClass="com.squareup.sqldelight.intellij.inspections.RedundantNullCheckInspection"
+        displayName="Redundant null check inspection"
+        groupName="Declaration redundancy"/>
+
+    <localInspection
+        enabledByDefault="true"
+        language="SqlDelight"
+        level="WARNING"
+        implementationClass="com.squareup.sqldelight.intellij.inspections.MixedNamedAndPositionalParamsInspection"
+        displayName="Mixed named and positional arguments inspection"
+        groupName="Declaration redundancy"/>
+
     <codeInsight.parameterInfo language="SqlDelight" implementationClass="com.squareup.sqldelight.intellij.SqlDelightParameterInfoHandler"/>
     <codeInsight.parameterNameHints language="SqlDelight" implementationClass="com.squareup.sqldelight.intellij.SqlDelightInlayParameterHintsProvider"/>
+
+    <liveTemplateMacro implementation="com.squareup.sqldelight.intellij.macro.DbColumnsMacro"/>
+    <liveTemplateMacro implementation="com.squareup.sqldelight.intellij.macro.PkMacro"/>
   </extensions>
 
   <actions>
@@ -157,6 +189,26 @@
     <action id="SqlDelight.NewFile"
         class="com.squareup.sqldelight.intellij.actions.file.SqlDelightCreateFileAction">
       <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+    </action>
+    <action id="SQDelight.GenerateSelectAllQuery" class="com.squareup.sqldelight.intellij.actions.GenerateSelectAllQueryAction"
+        text="Select All">
+      <add-to-group group-id="GenerateGroup"/>
+    </action>
+    <action id="SQDelight.GenerateSelectByPrimaryKeyQuery" class="com.squareup.sqldelight.intellij.actions.GenerateSelectByPrimaryKeyQueryAction"
+        text="Select By Primary Key">
+      <add-to-group group-id="GenerateGroup"/>
+    </action>
+    <action id="SQDelight.InsertInto" class="com.squareup.sqldelight.intellij.actions.GenerateInsertIntoQueryAction"
+        text="Insert Into">
+      <add-to-group group-id="GenerateGroup"/>
+    </action>
+    <action id="SQDelight.UpdateByPrimaryKeyQuery" class="com.squareup.sqldelight.intellij.actions.GenerateUpdateByPrimaryKeyQueryAction"
+        text="Update By Primary Key">
+      <add-to-group group-id="GenerateGroup"/>
+    </action>
+    <action id="SQDelight.DeleteByPrimaryKeyQuery" class="com.squareup.sqldelight.intellij.actions.GenerateDeleteByPrimaryKeyQueryAction"
+        text="Delete By Primary Key">
+      <add-to-group group-id="GenerateGroup"/>
     </action>
   </actions>
 </idea-plugin>

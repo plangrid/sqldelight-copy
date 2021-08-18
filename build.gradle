@@ -1,5 +1,4 @@
 import org.jetbrains.grammarkit.tasks.GenerateParser
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
   apply from: "$rootDir/gradle/dependencies.gradle"
@@ -12,8 +11,6 @@ buildscript {
     maven {
       url 'https://jitpack.io'
     }
-    maven { url 'https://www.jetbrains.com/intellij-repository/releases' }
-    maven { url "https://cache-redirector.jetbrains.com/intellij-dependencies" }
   }
 
   dependencies {
@@ -63,31 +60,13 @@ allprojects {
     }
   }
 
-  plugins.withId("org.jetbrains.kotlin.jvm") {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-  }
-
-  plugins.withId("com.android.library") {
-    extensions.getByName("android").compileOptions {
-      sourceCompatibility JavaVersion.VERSION_1_8
-      targetCompatibility JavaVersion.VERSION_1_8
-    }
-  }
-
-  tasks.withType(KotlinCompile).configureEach {
-    kotlinOptions {
-      jvmTarget = "1.8"
-    }
-  }
-
   configurations {
     grammar
   }
 
   dependencies {
     grammar deps.intellij.indexing
-    grammar deps.intellij.analysis
+    grammar deps.intellij.analysisImpl
     grammar deps.intellij.asm
   }
 
