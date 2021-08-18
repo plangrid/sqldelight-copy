@@ -1,6 +1,8 @@
 package com.squareup.sqldelight.intellij
 
 import com.alecstrong.sql.psi.core.psi.SqlBindExpr
+import com.alecstrong.sql.psi.core.psi.SqlColumnDef
+import com.alecstrong.sql.psi.core.psi.SqlInsertStmt
 import com.alecstrong.sql.psi.core.psi.SqlInsertStmtValues
 import com.alecstrong.sql.psi.core.psi.SqlTypes
 import com.alecstrong.sql.psi.core.psi.SqlValuesExpression
@@ -12,7 +14,9 @@ import com.intellij.lang.parameterInfo.ParameterInfoUIContext
 import com.intellij.lang.parameterInfo.ParameterInfoUtils
 import com.intellij.lang.parameterInfo.UpdateParameterInfoContext
 import com.intellij.psi.tree.IElementType
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.parentOfType
+import com.squareup.sqldelight.core.psi.SqlDelightColumnType
 
 class SqlDelightParameterInfoHandler : ParameterInfoHandlerWithTabActionSupport<SqlValuesExpression, List<String>, SqlBindExpr> {
 
@@ -33,9 +37,22 @@ class SqlDelightParameterInfoHandler : ParameterInfoHandlerWithTabActionSupport<
     if (valuesExpr.parent !is SqlInsertStmtValues) {
       return null
     }
-    val columns = valuesExpr.queryAvailable(element)
-      .flatMap { it.columns }
-      .map { it.element.text }
+
+    val columns = element.parentOfType<SqlInsertStmt>()?.columnNameList.orEmpty()
+      .mapNotNull { it.reference?.resolve()?.parent as? SqlColumnDef }
+      .mapNotNull { columnDef ->
+        val columnType = PsiTreeUtil.getChildOfType(columnDef, SqlDelightColumnType::class.java) ?: return@mapNotNull null
+        val annotations = columnType.annotationList.joinToString(", ") { "@${it.text}" }
+        val columnName = columnDef.columnName.text
+        val type = columnType.javaTypeName?.text ?: columnType.typeName.text
+        buildString {
+          if (annotations.isNotBlank()) {
+            append(annotations)
+            append(" ")
+          }
+          append("$columnName: $type")
+        }
+      }
     context.itemsToShow = arrayOf(columns)
     return valuesExpr
   }
